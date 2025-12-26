@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
+use Maatwebsite\Excel\Facades\Excel;
+use Spatie\Permission\Models\Role;
+
+class UserController extends Controller
+{
+    /**
+     * Display a listing of users.
+     */
+    public function index(Request $request)
+    {
+        $query = User::with('roles');
+
+        // Search
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%")
+                  ->orWhere('nip', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by type
+        if ($type = $request->input('type')) {
+            $query->where('type', $type);
+        }
+
+        // Filter by status
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        // Filter by role
+        if ($role = $request->input('role')) {
+            $query->role($role);
+        }
+
+        $users = $query->orderBy('name')->paginate(15)->withQueryString();
+        $roles = Role::all();
+
+        return view('admin.users.index', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new user.
+     */
+    public function create()
+    {
+        $roles = Role::all();
+        return view('admin.users.create', compact('roles'));
+    }
+
+    /**
+     * Store a newly created user.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|email|max:255|unique:users',
+            'password' => ['required', Password::defaults()],
+            'type' => 'required|in:student,teacher,parent,staff,admin',
+            'nis' => 'nullable|string|max:255',
+            'nip' => 'nullable|string|max:255',
+            'status' => 'required|in:active,suspended,pending',
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,id',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        $roleIds = $validated['roles'];
+        unset($validated['roles']);
+
+        $user = User::create($validated);
+        $user->roles()->sync($roleIds);
+
+        return redirect()->route('admin.users.index')
+            ->with('status', 'User berhasil dibuat.');
+    }
+
+    /**
+     * Display the specified user.
+     */
+    public function show(User $user)
+    {
+        $user->load('roles', 'loginLogs');
+        return view('admin.users.show', compact('user'));
+    }
+
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user)
+    {
+        $roles = Role::all();
+        return view('admin.users.edit', compact('user', 'roles'));
+    }
+
+    /**
+     * Update the specified user.
+     */
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'nullable|email|max:255|unique:users,email,' . $user->id,
+            'type' => 'required|in:student,teacher,parent,staff,admin',
+            'nis' => 'nullable|string|max:255',
+            'nip' => 'nullable|string|max:255',
+            'status' => 'required|in:active,suspended,pending',
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,id',
+        ]);
+
+        $roleIds = $validated['roles'];
+        unset($validated['roles']);
+
+        $user->update($validated);
+        $user->roles()->sync($roleIds);
+
+        return redirect()->route('admin.users.index')
+            ->with('status', 'User berhasil diperbarui.');
+    }
+
+    /**
+     * Remove the specified user.
+     */
+    public function destroy(User $user)
+    {
+        // Prevent self-deletion
+        if ($user->id === auth()->id()) {
+            return back()->withErrors(['error' => 'Tidak dapat menghapus akun sendiri.']);
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.users.index')
+            ->with('status', 'User berhasil dihapus.');
+    }
+
+    /**
+     * Show reset password form.
+     */
+    public function showResetPassword(User $user)
+    {
+        return view('admin.users.reset-password', compact('user'));
+    }
+
+    /**
+     * Reset user password.
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        $request->validate([
+            'password' => ['required', Password::defaults()],
+        ]);
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('admin.users.show', $user)
+            ->with('status', 'Password berhasil direset.');
+    }
+
+    /**
+     * Show import form.
+     */
+    public function showImportForm()
+    {
+        return view('admin.users.import');
+    }
+
+    /**
+     * Import users from file.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            // Import logic will be implemented with Maatwebsite Excel
+            // Excel::import(new UsersImport, $request->file('file'));
+            
+            return redirect()->route('admin.users.index')
+                ->with('status', 'Import berhasil. (Import handler perlu diimplementasi)');
+        } catch (\Exception $e) {
+            return back()->withErrors(['file' => 'Gagal import: ' . $e->getMessage()]);
+        }
+    }
+}
