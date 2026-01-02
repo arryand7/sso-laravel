@@ -88,7 +88,9 @@ class User extends Authenticatable
 
     public function canAccessApplication(Application $app): bool
     {
-        return $app->roles()->whereIn('id', $this->roles->pluck('id'))->exists();
+        return $app->roles()
+            ->whereIn('roles.id', $this->roles->pluck('id'))
+            ->exists();
     }
 
     /**
