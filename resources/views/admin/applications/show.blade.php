@@ -29,30 +29,82 @@
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Client Credentials -->
-    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">OAuth Credentials</h3>
-        <div class="bg-gray-50 p-4 rounded-lg border space-y-4">
-            <div>
-                <label class="block text-xs font-medium text-gray-500 uppercase">Client ID</label>
-                <div class="flex items-center mt-1">
-                    <code class="bg-white px-2 py-1 rounded border text-sm font-mono flex-1">{{ $application->client_id }}</code>
-                    <button class="ml-2 text-gray-400 hover:text-blue-600" onclick="navigator.clipboard.writeText('{{ $application->client_id }}')"><span class="material-symbols-outlined text-[20px]">content_copy</span></button>
+                <!-- Client Credentials -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">OAuth Credentials</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg border space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Client ID</label>
+                            <div class="flex items-center mt-1">
+                                <code class="bg-white px-2 py-1 rounded border text-sm font-mono flex-1">{{ $application->client_id }}</code>
+                                <button class="ml-2 text-gray-400 hover:text-blue-600" onclick="navigator.clipboard.writeText('{{ $application->client_id }}')"><span class="material-symbols-outlined text-[20px]">content_copy</span></button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Client Secret</label>
+                            <div class="flex flex-col gap-2 mt-1">
+                                <div class="flex items-center gap-2">
+                                    <code id="client-secret-value" data-secret="{{ $application->client_secret }}" class="bg-white px-2 py-1 rounded border text-sm font-mono flex-1">********************************</code>
+                                    <button id="client-secret-toggle" type="button" class="text-gray-500 hover:text-blue-600 text-sm">
+                                        Tampilkan
+                                    </button>
+                                    <button id="client-secret-copy" type="button" class="text-gray-500 hover:text-blue-600 text-sm">
+                                        Copy
+                                    </button>
+                                </div>
+                                <div>
+                                    <form method="POST" action="{{ route('admin.applications.regenerate-secret', $application) }}" onsubmit="return confirm('Regenerate secret? Client lama akan tidak bisa login.')">
+                                        @csrf
+                                        <button type="submit" class="text-orange-600 hover:text-orange-800 text-sm flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">sync</span> Regenerate
+                                        </button>
+                                    </form>
+                                </div>
+                                <p class="text-xs text-gray-500">Klik "Tampilkan" untuk melihat secret dan "Copy" untuk menyalin.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-500 uppercase">Client Secret</label>
-                <div class="flex items-center justify-between mt-1">
-                    <div class="flex items-center flex-1">
-                        <code class="bg-white px-2 py-1 rounded border text-sm font-mono flex-1 mr-2">********************************</code>
-                        <form method="POST" action="{{ route('admin.applications.regenerate-secret', $application) }}" onsubmit="return confirm('Regenerate secret? Client lama akan tidak bisa login.')">
-                            @csrf
-                            <button type="submit" class="text-orange-600 hover:text-orange-800 text-sm flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[16px]">sync</span> Regenerate
-                            </button>
-                        </form>
-                    </div>
-                </div>         <div class="border-t pt-6 mb-6">
+
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const secretEl = document.getElementById('client-secret-value');
+                    const toggleBtn = document.getElementById('client-secret-toggle');
+                    const copyBtn = document.getElementById('client-secret-copy');
+                    if (!secretEl || !toggleBtn || !copyBtn) {
+                        return;
+                    }
+
+                    const masked = '********************************';
+                    const secret = secretEl.dataset.secret || '';
+                    let revealed = false;
+
+                    const updateView = () => {
+                        secretEl.textContent = revealed ? secret : masked;
+                        toggleBtn.textContent = revealed ? 'Sembunyikan' : 'Tampilkan';
+                    };
+
+                    toggleBtn.addEventListener('click', () => {
+                        revealed = !revealed;
+                        updateView();
+                    });
+
+                    copyBtn.addEventListener('click', () => {
+                        if (!secret) {
+                            return;
+                        }
+                        navigator.clipboard.writeText(secret);
+                        copyBtn.textContent = 'Tersalin';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copy';
+                        }, 1200);
+                    });
+
+                    updateView();
+                });
+            </script>
+        <div class="border-t pt-6 mb-6">
                 <h3 class="font-semibold text-gray-800 mb-3">Roles dengan Akses</h3>
                 <div class="flex flex-wrap gap-2">@foreach($application->roles as $role)<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">{{ $role->name }}</span>@endforeach</div>
             </div>
