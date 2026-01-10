@@ -26,6 +26,7 @@
                 <div><span class="text-gray-500 text-sm">Kategori</span><p class="font-medium">{{ $application->category ?? '-' }}</p></div>
                 <div><span class="text-gray-500 text-sm">Status</span><p>@if($application->is_active)<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>@else<span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>@endif</p></div>
                 <div class="col-span-2"><span class="text-gray-500 text-sm">Redirect URI</span><p class="font-medium break-all">{{ $application->redirect_uri }}</p></div>
+                <div class="col-span-2"><span class="text-gray-500 text-sm">SSO Login URL</span><p class="font-medium break-all">{{ $application->sso_login_url ?? '-' }}</p></div>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -57,15 +57,21 @@
                     <p class="text-slate-500 dark:text-slate-400 text-sm mb-6 flex-1">
                         {{ $app->description ?? 'Tidak ada deskripsi tersedia.' }}
                     </p>
-                    <form action="{{ route('oauth.authorize') }}" method="GET" class="mt-auto">
-                        <input type="hidden" name="client_id" value="{{ $app->client_id }}">
-                        <input type="hidden" name="redirect_uri" value="{{ $app->redirect_uri }}">
-                        <input type="hidden" name="response_type" value="code">
-                        <input type="hidden" name="scope" value="openid profile email roles">
-                        <button type="submit" class="inline-flex items-center text-sm font-semibold text-primary group-hover:underline decoration-2 underline-offset-4 decoration-primary/30 group-hover:decoration-primary cursor-pointer">
+                    @if(!empty($app->sso_login_url))
+                        <a href="{{ $app->sso_login_url }}" class="inline-flex items-center text-sm font-semibold text-primary group-hover:underline decoration-2 underline-offset-4 decoration-primary/30 group-hover:decoration-primary cursor-pointer">
                             Buka Aplikasi <span class="material-symbols-outlined text-base ml-1 transition-transform group-hover:translate-x-1">arrow_forward</span>
-                        </button>
-                    </form>
+                        </a>
+                    @else
+                        <form action="{{ route('oauth.authorize') }}" method="GET" class="mt-auto">
+                            <input type="hidden" name="client_id" value="{{ $app->client_id }}">
+                            <input type="hidden" name="redirect_uri" value="{{ $app->redirect_uri }}">
+                            <input type="hidden" name="response_type" value="code">
+                            <input type="hidden" name="scope" value="openid profile email roles">
+                            <button type="submit" class="inline-flex items-center text-sm font-semibold text-primary group-hover:underline decoration-2 underline-offset-4 decoration-primary/30 group-hover:decoration-primary cursor-pointer">
+                                Buka Aplikasi <span class="material-symbols-outlined text-base ml-1 transition-transform group-hover:translate-x-1">arrow_forward</span>
+                            </button>
+                        </form>
+                    @endif
                 </div>
             @endforeach
         </div>

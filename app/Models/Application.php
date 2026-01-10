@@ -19,6 +19,7 @@ class Application extends Model
         'client_id',
         'client_secret',
         'redirect_uri',
+        'sso_login_url',
         'category',
         'icon',
         'description',
