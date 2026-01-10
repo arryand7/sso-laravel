@@ -7,6 +7,7 @@ use App\Models\LoginLog;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 
 class LoginController extends Controller
@@ -45,12 +46,23 @@ class LoginController extends Controller
             'password' => 'required|string',
         ]);
 
+        $loginKey = $this->loginKey($request);
+        if (RateLimiter::tooManyAttempts($loginKey, 5)) {
+            $seconds = RateLimiter::availableIn($loginKey);
+            $minutes = (int) ceil($seconds / 60);
+
+            return back()->withErrors([
+                'username' => 'Terlalu banyak percobaan login. Coba lagi dalam '.$minutes.' menit.',
+            ])->withInput($request->only('username'));
+        }
+
         // Try to authenticate with username or email
         $credentials = $request->only('password');
         $loginField = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $credentials[$loginField] = $request->username;
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::clear($loginKey);
             $user = Auth::user();
             
             // Check if user is active
@@ -78,6 +90,8 @@ class LoginController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
+        RateLimiter::hit($loginKey, 300);
+
         return back()->withErrors([
             'username' => 'Username atau password salah.',
         ])->withInput($request->only('username'));
@@ -93,5 +107,12 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    protected function loginKey(Request $request): string
+    {
+        $username = strtolower((string) $request->input('username', 'guest'));
+
+        return $username.'|'.$request->ip();
     }
 }

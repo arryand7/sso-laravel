@@ -25,8 +25,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('oauth-token', function (Request $request) {
-            $clientId = (string) $request->input('client_id', 'unknown');
-            return Limit::perMinute(30)->by($clientId.'|'.$request->ip());
+            $clientId = trim((string) $request->input('client_id', ''));
+            $key = ($clientId !== '' ? $clientId : 'unknown').'|'.$request->ip();
+
+            return [
+                Limit::perMinute(20)->by($key),
+                Limit::perHour(200)->by($key),
+            ];
         });
 
         RateLimiter::for('login', function (Request $request) {

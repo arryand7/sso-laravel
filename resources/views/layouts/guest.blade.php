@@ -41,7 +41,7 @@
         <!-- Page Footer -->
         <div class="text-center">
             <p class="text-[#9ca3af] dark:text-[#64748b] text-xs font-medium">
-                © {{ date('Y') }} Sabira System. Hak Cipta Dilindungi.
+                Copyright {{ date('Y') }} Sabira Connect. Built by Ryand Arifriantoni (arryand7@gmail.com).
             </p>
         </div>
     </div>

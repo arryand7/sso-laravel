@@ -55,10 +55,15 @@ class OidcTokenService
 
     protected function getPrivateKey()
     {
+        $configured = config('passport.private_key');
+        if ($configured) {
+            return openssl_pkey_get_private($this->normalizeKey($configured));
+        }
+
         $path = storage_path('oauth-private.key');
 
         if (!file_exists($path)) {
-            throw new \RuntimeException('Passport private key not found. Run "php artisan passport:keys".');
+            throw new \RuntimeException('Passport private key not found. Run "php artisan passport:keys" or set PASSPORT_PRIVATE_KEY.');
         }
 
         return openssl_pkey_get_private(file_get_contents($path));
@@ -66,6 +71,11 @@ class OidcTokenService
 
     protected function keyId(): ?string
     {
+        $configured = config('passport.public_key');
+        if ($configured) {
+            return md5($this->normalizeKey($configured));
+        }
+
         $path = storage_path('oauth-public.key');
 
         if (!file_exists($path)) {
@@ -78,5 +88,14 @@ class OidcTokenService
     protected function base64UrlEncode(string $value): string
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    protected function normalizeKey(string $key): string
+    {
+        if (str_contains($key, '\\n')) {
+            return str_replace('\\n', "\n", $key);
+        }
+
+        return $key;
     }
 }

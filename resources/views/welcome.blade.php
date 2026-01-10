@@ -184,7 +184,7 @@
                 <div class="size-6 flex items-center justify-center rounded bg-slate-200 text-slate-600"><span class="material-symbols-outlined text-[16px]">school</span></div>
                 <span class="text-sm font-semibold text-slate-700">Sabira Connect</span>
             </div>
-            <div class="text-sm text-slate-500">© {{ date('Y') }} Sabira Ecosystem. All rights reserved.</div>
+            <div class="text-sm text-slate-500">Copyright {{ date('Y') }} Sabira Connect. Built by Ryand Arifriantoni (arryand7@gmail.com).</div>
             <div class="flex gap-6"><a class="text-xs text-slate-500 hover:text-slate-900 font-medium" href="#">Privacy Policy</a><a class="text-xs text-slate-500 hover:text-slate-900 font-medium" href="#">Terms</a></div>
         </div>
     </footer>

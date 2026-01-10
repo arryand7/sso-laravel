@@ -163,3 +163,7 @@ Catatan:
 ## Lisensi
 
 Internal project untuk ekosistem sekolah Sabira.
+
+## Kredit
+
+Sabira Connect dibuat oleh Ryand Arifriantoni (arryand7@gmail.com).
