@@ -126,6 +126,14 @@ Catatan:
 - Untuk OIDC token, pastikan `passport:install` atau `passport:keys` sudah dijalankan.
 - DB default menggunakan SQLite, sesuaikan `.env` jika menggunakan MySQL.
 
+## Sinkronisasi user
+
+Script dan panduan sinkronisasi user tersedia di `SYNC.md`.
+
+- SSS -> Gate: `scripts/sync_users.php`
+- Gate -> LMS: `scripts/sync_gate_to_lms.php`
+- Contoh cron harian ada di `ops/cron.d/gate-sync`
+
 ## Akun default hasil seed
 
 - Superadmin  

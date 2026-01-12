@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+# Daily sync (SSS -> Gate, Gate -> LMS) at 01:15
+15 1 * * * www-data /var/www/gate.sabira-iibs.id/scripts/cron_sync.sh >> /var/www/gate.sabira-iibs.id/storage/logs/cron_sync.log 2>&1
