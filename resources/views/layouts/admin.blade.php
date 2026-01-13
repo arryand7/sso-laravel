@@ -51,14 +51,18 @@
         .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
         .d-flex { display: flex; }
         .align-items-center { align-items: center; }
+        .justify-end { justify-content: flex-end; }
         .gap-2 { gap: 0.5rem; }
         .mb-3 { margin-bottom: 0.75rem; }
         .btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
         .btn-secondary { background: #f1f5f9; }
         .btn-group { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
         .dt-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .dataTables_length { display: flex; align-items: center; }
+        .dataTables_filter { display: flex; justify-content: flex-end; }
         .dataTables_wrapper .dataTables_length label,
         .dataTables_wrapper .dataTables_filter label { font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 0.5rem; }
+        .dataTables_wrapper .dataTables_filter label { white-space: nowrap; }
         .dataTables_wrapper .dataTables_filter input,
         .dataTables_wrapper .dataTables_length select { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.35rem 0.6rem; font-size: 0.85rem; background: #fff; }
         .dataTables_wrapper .dt-buttons .btn { border: 1px solid #e2e8f0; }
@@ -81,6 +85,11 @@
             .col-md-6 { flex: 0 0 50%; max-width: 50%; }
             .col-md-5 { flex: 0 0 41.666666%; max-width: 41.666666%; }
             .col-md-7 { flex: 0 0 58.333333%; max-width: 58.333333%; }
+        }
+        @media (min-width: 1024px) {
+            .dataTables_wrapper .row.mb-3 { flex-wrap: nowrap; }
+            .dataTables_wrapper .row.mb-3 > .col-md-7 { flex: 1 1 auto; min-width: 0; }
+            .dataTables_wrapper .row.mb-3 > .col-md-5 { flex: 0 0 auto; margin-left: auto; }
         }
     </style>
 </head>
@@ -187,7 +196,7 @@
                     info: true,
                     lengthChange: true,
                     pageLength: 10,
-                    dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-6 d-flex align-items-center gap-2'B l><'col-sm-12 col-md-6'f>>t<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                    dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-7 d-flex align-items-center gap-2'B l><'col-sm-12 col-md-5 d-flex align-items-center justify-end'f>>t<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
                     buttons: [
                         { extend: 'copy', className: 'btn btn-secondary' },
                         { extend: 'csv', className: 'btn btn-secondary' },
