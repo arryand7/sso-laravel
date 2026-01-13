@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+    <link href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" rel="stylesheet"/>
+    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css" rel="stylesheet"/>
     
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
@@ -43,6 +46,42 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        .row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
+        .btn-secondary { background: #f1f5f9; }
+        .btn-group { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+        .dt-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label { font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 0.5rem; }
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.35rem 0.6rem; font-size: 0.85rem; background: #fff; }
+        .dataTables_wrapper .dt-buttons .btn { border: 1px solid #e2e8f0; }
+        .dataTables_wrapper .dataTables_info { font-size: 0.8rem; color: #64748b; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { border-radius: 0.5rem; padding: 0.2rem 0.6rem; margin-left: 0.25rem; border: 1px solid transparent; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #2563eb; color: #fff !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: #e2e8f0; color: #0f172a !important; border: 1px solid #e2e8f0; }
+        .dataTables_wrapper table.dataTable.no-footer { border-bottom: 1px solid #e2e8f0; }
+
+        .dark .btn { border-color: #334155; background: #0f172a; color: #e2e8f0; }
+        .dark .btn-secondary { background: #111827; }
+        .dark .dataTables_wrapper .dataTables_length label,
+        .dark .dataTables_wrapper .dataTables_filter label { color: #cbd5f5; }
+        .dark .dataTables_wrapper .dataTables_filter input,
+        .dark .dataTables_wrapper .dataTables_length select { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+        .dark .dataTables_wrapper .dataTables_info { color: #94a3b8; }
+        .dark .dataTables_wrapper table.dataTable.no-footer { border-bottom: 1px solid #334155; }
+
+        @media (min-width: 768px) {
+            .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+            .col-md-5 { flex: 0 0 41.666666%; max-width: 41.666666%; }
+            .col-md-7 { flex: 0 0 58.333333%; max-width: 58.333333%; }
+        }
     </style>
 </head>
 <body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-white h-screen flex overflow-hidden">
@@ -127,5 +166,50 @@
             </footer>
         </div>
     </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.js-admin-table[data-datatable="true"]').forEach((table) => {
+                const $table = $(table);
+
+                $table.DataTable({
+                    paging: true,
+                    ordering: true,
+                    info: true,
+                    lengthChange: true,
+                    pageLength: 10,
+                    dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-6 d-flex align-items-center gap-2'B l><'col-sm-12 col-md-6'f>>t<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                    buttons: [
+                        { extend: 'copy', className: 'btn btn-secondary' },
+                        { extend: 'csv', className: 'btn btn-secondary' },
+                        { extend: 'excel', className: 'btn btn-secondary' },
+                        { extend: 'pdf', className: 'btn btn-secondary' },
+                        { extend: 'print', className: 'btn btn-secondary' },
+                        { extend: 'colvis', className: 'btn btn-secondary' },
+                    ],
+                    language: {
+                        search: 'Cari:',
+                        lengthMenu: 'Tampilkan _MENU_ entri',
+                        info: 'Menampilkan _START_ hingga _END_ dari _TOTAL_ entri',
+                        infoEmpty: 'Tidak ada data',
+                        zeroRecords: 'Tidak ada data yang cocok',
+                        paginate: {
+                            previous: 'Sebelumnya',
+                            next: 'Berikutnya',
+                        },
+                    },
+                });
+            });
+        });
+    </script>
 </body>
 </html>
