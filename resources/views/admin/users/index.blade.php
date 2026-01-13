@@ -64,44 +64,43 @@
 </div>
 
 <!-- Users Table -->
-<div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50 border-b">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-            @forelse($users as $user)
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4">
+<x-admin.table>
+    <x-slot:head>
+        <tr>
+            <th class="px-4 py-3 text-left">User</th>
+            <th class="px-4 py-3 text-left">Username</th>
+            <th class="px-4 py-3 text-left">Tipe</th>
+            <th class="px-4 py-3 text-left">Role</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+        </tr>
+    </x-slot:head>
+    <x-slot:body>
+        @forelse($users as $user)
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="px-4 py-3">
                     <div>
-                        <div class="font-medium text-gray-900">{{ $user->name }}</div>
-                        <div class="text-sm text-gray-500">{{ $user->email ?? '-' }}</div>
+                        <div class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">{{ $user->email ?? '-' }}</div>
                     </div>
                 </td>
-                <td class="px-6 py-4">
-                    <span class="text-gray-900">{{ $user->username }}</span>
+                <td class="px-4 py-3">
+                    <span class="text-slate-900 dark:text-slate-100">{{ $user->username }}</span>
                     @if($user->nis)
-                        <div class="text-xs text-gray-500">NIS: {{ $user->nis }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">NIS: {{ $user->nis }}</div>
                     @elseif($user->nip)
-                        <div class="text-xs text-gray-500">NIP: {{ $user->nip }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">NIP: {{ $user->nip }}</div>
                     @endif
                 </td>
-                <td class="px-6 py-4">
-                    <span class="capitalize text-gray-700">{{ $user->type }}</span>
+                <td class="px-4 py-3">
+                    <span class="capitalize text-slate-700 dark:text-slate-300">{{ $user->type }}</span>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-4 py-3">
                     @foreach($user->roles as $role)
                         <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">{{ $role->name }}</span>
                     @endforeach
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-4 py-3">
                     @if($user->status === 'active')
                         <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
                     @elseif($user->status === 'suspended')
@@ -110,38 +109,36 @@
                         <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
                     @endif
                 </td>
-                <td class="px-6 py-4 text-right">
+                <td class="px-4 py-3 text-right">
                     <div class="flex justify-end space-x-2">
-                        <a href="{{ route('admin.users.show', $user) }}" class="text-gray-400 hover:text-gray-600" title="Lihat">
+                        <a href="{{ route('admin.users.show', $user) }}" class="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Lihat">
                             <span class="material-symbols-outlined text-[20px]">visibility</span>
                         </a>
-                        <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-400 hover:text-blue-600" title="Edit">
+                        <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-500 hover:text-blue-600" title="Edit">
                             <span class="material-symbols-outlined text-[20px]">edit</span>
                         </a>
                         <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline" onsubmit="return confirm('Yakin hapus user ini?')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="text-red-400 hover:text-red-600" title="Hapus">
+                            <button type="submit" class="text-rose-500 hover:text-rose-600" title="Hapus">
                                 <span class="material-symbols-outlined text-[20px]">delete</span>
                             </button>
                         </form>
                     </div>
                 </td>
             </tr>
-            @empty
+        @empty
             <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                <td colspan="6" class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
                     Tidak ada user ditemukan.
                 </td>
             </tr>
-            @endforelse
-        </tbody>
-    </table>
-    
+        @endforelse
+    </x-slot:body>
     @if($users->hasPages())
-    <div class="px-6 py-4 border-t">
-        {{ $users->links() }}
-    </div>
+        <x-slot:footer>
+            {{ $users->links() }}
+        </x-slot:footer>
     @endif
-</div>
+</x-admin.table>
 @endsection

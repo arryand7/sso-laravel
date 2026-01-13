@@ -112,12 +112,28 @@
             
             <div class="border-t pt-6">
                 <h3 class="font-semibold text-gray-800 mb-3">Users dengan Akses ({{ $users->total() }} total)</h3>
-                <div class="bg-gray-50 rounded-lg overflow-hidden">
-                    <table class="w-full">
-                        <thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left text-xs text-gray-500">Nama</th><th class="px-4 py-2 text-left text-xs text-gray-500">Username</th><th class="px-4 py-2 text-left text-xs text-gray-500">Tipe</th></tr></thead>
-                        <tbody class="divide-y">@forelse($users->take(10) as $user)<tr><td class="px-4 py-2">{{ $user->name }}</td><td class="px-4 py-2">{{ $user->username }}</td><td class="px-4 py-2 capitalize">{{ $user->type }}</td></tr>@empty<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">Tidak ada user.</td></tr>@endforelse</tbody>
-                    </table>
-                </div>
+                <x-admin.table>
+                    <x-slot:head>
+                        <tr>
+                            <th class="px-4 py-3 text-left">Nama</th>
+                            <th class="px-4 py-3 text-left">Username</th>
+                            <th class="px-4 py-3 text-left">Tipe</th>
+                        </tr>
+                    </x-slot:head>
+                    <x-slot:body>
+                        @forelse($users->take(10) as $user)
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</td>
+                                <td class="px-4 py-3">{{ $user->username }}</td>
+                                <td class="px-4 py-3 capitalize">{{ $user->type }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">Tidak ada user.</td>
+                            </tr>
+                        @endforelse
+                    </x-slot:body>
+                </x-admin.table>
                 @if($users->total() > 10)<a href="{{ route('admin.applications.users', $application) }}" class="inline-block mt-3 text-blue-600 hover:text-blue-800 text-sm">Lihat semua {{ $users->total() }} users →</a>@endif
             </div>
         </div>

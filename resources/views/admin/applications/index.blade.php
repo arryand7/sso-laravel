@@ -21,34 +21,61 @@
     </form>
 </div>
 
-<div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50 border-b"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aplikasi</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th></tr></thead>
-        <tbody class="divide-y divide-gray-200">
-            @forelse($applications as $app)
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4">
+<x-admin.table>
+    <x-slot:head>
+        <tr>
+            <th class="px-4 py-3 text-left">Aplikasi</th>
+            <th class="px-4 py-3 text-left">URL</th>
+            <th class="px-4 py-3 text-left">Kategori</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+        </tr>
+    </x-slot:head>
+    <x-slot:body>
+        @forelse($applications as $app)
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="px-4 py-3">
                     <div class="flex items-center">
-                        <div class="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mr-3"><span class="material-symbols-outlined">{{ $app->icon ?? 'apps' }}</span></div>
-                        <div><div class="font-medium text-gray-900">{{ $app->name }}</div><div class="text-xs text-gray-500">{{ $app->slug }}</div></div>
+                        <div class="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mr-3">
+                            <span class="material-symbols-outlined">{{ $app->icon ?? 'apps' }}</span>
+                        </div>
+                        <div>
+                            <div class="font-medium text-slate-900 dark:text-slate-100">{{ $app->name }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">{{ $app->slug }}</div>
+                        </div>
                     </div>
                 </td>
-                <td class="px-6 py-4"><div class="text-sm text-gray-600 truncate max-w-xs" title="{{ $app->base_url }}">{{ $app->base_url }}</div></td>
-                <td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">{{ $app->category }}</span></td>
-                <td class="px-6 py-4">@if($app->is_active)<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>@else<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">Inactive</span>@endif</td>
-                <td class="px-6 py-4 text-right">
+                <td class="px-4 py-3">
+                    <div class="text-sm text-slate-600 dark:text-slate-300 truncate max-w-xs" title="{{ $app->base_url }}">{{ $app->base_url }}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-md">{{ $app->category }}</span>
+                </td>
+                <td class="px-4 py-3">
+                    @if($app->is_active)
+                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                    @else
+                        <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">Inactive</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-right">
                     <div class="flex justify-end space-x-2">
-                        <a href="{{ route('admin.applications.show', $app) }}" class="text-gray-400 hover:text-gray-600" title="Detail"><span class="material-symbols-outlined text-[20px]">visibility</span></a>
-                        <a href="{{ route('admin.applications.edit', $app) }}" class="text-blue-400 hover:text-blue-600" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></a>
-                        <form method="POST" action="{{ route('admin.applications.destroy', $app) }}" class="inline" onsubmit="return confirm('Hapus aplikasi?')">@csrf @method('DELETE')<button class="text-red-400 hover:text-red-600" title="Hapus"><span class="material-symbols-outlined text-[20px]">delete</span></button></form>
+                        <a href="{{ route('admin.applications.show', $app) }}" class="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Detail"><span class="material-symbols-outlined text-[20px]">visibility</span></a>
+                        <a href="{{ route('admin.applications.edit', $app) }}" class="text-blue-500 hover:text-blue-600" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></a>
+                        <form method="POST" action="{{ route('admin.applications.destroy', $app) }}" class="inline" onsubmit="return confirm('Hapus aplikasi?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="text-rose-500 hover:text-rose-600" title="Hapus"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+                        </form>
                     </div>
                 </td>
             </tr>
-            @empty
-            <tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">Tidak ada aplikasi.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    @if($applications->hasPages())<div class="px-6 py-4 border-t">{{ $applications->links() }}</div>@endif
-</div>
+        @empty
+            <tr><td colspan="5" class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">Tidak ada aplikasi.</td></tr>
+        @endforelse
+    </x-slot:body>
+    @if($applications->hasPages())
+        <x-slot:footer>{{ $applications->links() }}</x-slot:footer>
+    @endif
+</x-admin.table>
 @endsection

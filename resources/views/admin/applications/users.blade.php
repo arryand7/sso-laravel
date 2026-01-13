@@ -42,31 +42,46 @@
     </form>
 </div>
 
-<div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50 border-b">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Roles</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+<x-admin.table>
+    <x-slot:head>
+        <tr>
+            <th class="px-4 py-3 text-left">User</th>
+            <th class="px-4 py-3 text-left">Username</th>
+            <th class="px-4 py-3 text-left">Tipe</th>
+            <th class="px-4 py-3 text-left">Roles</th>
+            <th class="px-4 py-3 text-left">Status</th>
+        </tr>
+    </x-slot:head>
+    <x-slot:body>
+        @forelse($users as $user)
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="px-4 py-3">
+                    <div class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $user->email ?? '-' }}</div>
+                </td>
+                <td class="px-4 py-3">{{ $user->username }}</td>
+                <td class="px-4 py-3 capitalize">{{ $user->type }}</td>
+                <td class="px-4 py-3">
+                    @foreach($user->roles as $role)
+                        <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mr-1">{{ $role->name }}</span>
+                    @endforeach
+                </td>
+                <td class="px-4 py-3">
+                    @if($user->status === 'active')
+                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                    @elseif($user->status === 'suspended')
+                        <span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Suspended</span>
+                    @else
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
+                    @endif
+                </td>
             </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-            @forelse($users as $user)
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4"><div class="font-medium text-gray-900">{{ $user->name }}</div><div class="text-sm text-gray-500">{{ $user->email ?? '-' }}</div></td>
-                <td class="px-6 py-4">{{ $user->username }}</td>
-                <td class="px-6 py-4 capitalize">{{ $user->type }}</td>
-                <td class="px-6 py-4">@foreach($user->roles as $role)<span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mr-1">{{ $role->name }}</span>@endforeach</td>
-                <td class="px-6 py-4">@if($user->status === 'active')<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>@elseif($user->status === 'suspended')<span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Suspended</span>@else<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>@endif</td>
-            </tr>
-            @empty
-            <tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">Tidak ada user ditemukan.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    @if($users->hasPages())<div class="px-6 py-4 border-t">{{ $users->links() }}</div>@endif
-</div>
+        @empty
+            <tr><td colspan="5" class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">Tidak ada user ditemukan.</td></tr>
+        @endforelse
+    </x-slot:body>
+    @if($users->hasPages())
+        <x-slot:footer>{{ $users->links() }}</x-slot:footer>
+    @endif
+</x-admin.table>
 @endsection

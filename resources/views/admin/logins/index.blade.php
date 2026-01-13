@@ -13,22 +13,32 @@
     </form>
 </div>
 
-<div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50 border-b"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aplikasi</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Waktu</th></tr></thead>
-        <tbody class="divide-y divide-gray-200">
-            @forelse($logs as $log)
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4"><div class="font-medium">{{ $log->user->name ?? 'Unknown' }}</div><div class="text-sm text-gray-500">{{ $log->user->username ?? '' }}</div></td>
-                <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">{{ $log->client_app }}</span></td>
-                <td class="px-6 py-4 text-gray-600">{{ $log->ip_address }}</td>
-                <td class="px-6 py-4 text-gray-600"><span title="{{ $log->login_at }}">{{ $log->login_at->format('d M Y H:i') }}</span></td>
+<x-admin.table>
+    <x-slot:head>
+        <tr>
+            <th class="px-4 py-3 text-left">User</th>
+            <th class="px-4 py-3 text-left">Aplikasi</th>
+            <th class="px-4 py-3 text-left">IP Address</th>
+            <th class="px-4 py-3 text-left">Waktu</th>
+        </tr>
+    </x-slot:head>
+    <x-slot:body>
+        @forelse($logs as $log)
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="px-4 py-3">
+                    <div class="font-medium text-slate-900 dark:text-slate-100">{{ $log->user->name ?? 'Unknown' }}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $log->user->username ?? '' }}</div>
+                </td>
+                <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">{{ $log->client_app }}</span></td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $log->ip_address }}</td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-300"><span title="{{ $log->login_at }}">{{ $log->login_at->format('d M Y H:i') }}</span></td>
             </tr>
-            @empty
-            <tr><td colspan="4" class="px-6 py-12 text-center text-gray-500">Tidak ada log login.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    @if($logs->hasPages())<div class="px-6 py-4 border-t">{{ $logs->links() }}</div>@endif
-</div>
+        @empty
+            <tr><td colspan="4" class="px-4 py-12 text-center text-slate-500 dark:text-slate-400">Tidak ada log login.</td></tr>
+        @endforelse
+    </x-slot:body>
+    @if($logs->hasPages())
+        <x-slot:footer>{{ $logs->links() }}</x-slot:footer>
+    @endif
+</x-admin.table>
 @endsection
