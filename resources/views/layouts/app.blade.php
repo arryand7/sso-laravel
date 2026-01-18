@@ -54,8 +54,11 @@
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white font-display overflow-hidden h-screen flex">
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
     <!-- Sidebar -->
-    <aside class="w-72 bg-surface-light dark:bg-background-dark border-r border-border-light dark:border-border-dark hidden md:flex flex-col justify-between h-full transition-colors duration-300">
+    <aside id="app-sidebar" class="w-72 bg-surface-light dark:bg-background-dark border-r border-border-light dark:border-border-dark fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 md:static md:flex flex-col justify-between h-full transition-transform duration-300 ease-out">
         <div class="flex flex-col h-full">
             <!-- Logo Area -->
             <div class="px-6 py-5 border-b border-border-light dark:border-border-dark flex items-center gap-3">
@@ -66,6 +69,9 @@
                     <h1 class="text-[#111318] dark:text-white text-base font-bold leading-tight">Sabira Connect</h1>
                     <p class="text-[#616e89] dark:text-slate-400 text-xs font-normal">School Ecosystem</p>
                 </div>
+                <button id="sidebar-close" class="ml-auto md:hidden p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/10">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             </div>
             <!-- Navigation -->
             <nav class="flex-1 px-4 py-6 flex flex-col gap-2 overflow-y-auto">
@@ -114,7 +120,7 @@
         <!-- Top Navigation -->
         <header class="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-border-light dark:border-border-dark bg-surface-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-20">
             <!-- Mobile Menu Trigger -->
-            <button class="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg">
+            <button id="sidebar-toggle" class="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg" aria-controls="app-sidebar" aria-expanded="false">
                 <span class="material-symbols-outlined">menu</span>
             </button>
             
@@ -166,5 +172,48 @@
             </div>
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('app-sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const toggle = document.getElementById('sidebar-toggle');
+            const closeBtn = document.getElementById('sidebar-close');
+
+            if (!sidebar || !overlay || !toggle) return;
+
+            const openSidebar = () => {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                overlay.classList.remove('hidden');
+                toggle.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('overflow-hidden');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+                overlay.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('overflow-hidden');
+            };
+
+            toggle.addEventListener('click', openSidebar);
+            overlay.addEventListener('click', closeSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) {
+                    overlay.classList.add('hidden');
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    document.body.classList.remove('overflow-hidden');
+                    toggle.setAttribute('aria-expanded', 'false');
+                } else if (!sidebar.classList.contains('translate-x-0')) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -22,6 +22,7 @@ class Application extends Model
         'sso_login_url',
         'category',
         'icon',
+        'logo_path',
         'description',
         'is_active',
     ];
@@ -35,6 +36,15 @@ class Application extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (!$this->logo_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->logo_path);
     }
 
     // ========== Relationships ==========

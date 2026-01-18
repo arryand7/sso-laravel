@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -59,7 +61,7 @@ class ApplicationController extends Controller
             'redirect_uri' => 'required|string',
             'sso_login_url' => 'nullable|url|max:255',
             'category' => 'nullable|string|max:255',
-            'icon' => 'nullable|string|max:255',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'roles' => 'required|array',
@@ -73,6 +75,11 @@ class ApplicationController extends Controller
 
         $roleIds = $validated['roles'];
         unset($validated['roles']);
+
+        $logoPath = $this->storeLogo($request->file('logo'));
+        if ($logoPath) {
+            $validated['logo_path'] = $logoPath;
+        }
 
         $application = Application::create($validated);
         $application->roles()->sync($roleIds);
@@ -135,7 +142,7 @@ class ApplicationController extends Controller
             'redirect_uri' => 'required|string',
             'sso_login_url' => 'nullable|url|max:255',
             'category' => 'nullable|string|max:255',
-            'icon' => 'nullable|string|max:255',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'roles' => 'required|array',
@@ -146,6 +153,10 @@ class ApplicationController extends Controller
 
         $roleIds = $validated['roles'];
         unset($validated['roles']);
+
+        if ($request->hasFile('logo')) {
+            $validated['logo_path'] = $this->storeLogo($request->file('logo'), $application->logo_path);
+        }
 
         $application->update($validated);
         $application->roles()->sync($roleIds);
@@ -160,6 +171,10 @@ class ApplicationController extends Controller
      */
     public function destroy(Application $application)
     {
+        if ($application->logo_path && Storage::disk('public')->exists($application->logo_path)) {
+            Storage::disk('public')->delete($application->logo_path);
+        }
+
         $application->passportClient()->delete();
         $application->delete();
 
@@ -179,5 +194,48 @@ class ApplicationController extends Controller
         return redirect()->route('admin.applications.show', $application)
             ->with('status', 'Client secret berhasil digenerate ulang.')
             ->with('client_secret', $newSecret); // Show once
+    }
+
+    protected function storeLogo(?UploadedFile $file, ?string $existingPath = null): ?string
+    {
+        if (!$file) {
+            return $existingPath;
+        }
+
+        $image = imagecreatefromstring(file_get_contents($file->getRealPath()));
+        if (!$image) {
+            return $existingPath;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $side = min($width, $height);
+        $srcX = (int) floor(($width - $side) / 2);
+        $srcY = (int) floor(($height - $side) / 2);
+
+        $targetSize = 256;
+        $canvas = imagecreatetruecolor($targetSize, $targetSize);
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+        imagefill($canvas, 0, 0, $transparent);
+
+        imagecopyresampled($canvas, $image, 0, 0, $srcX, $srcY, $targetSize, $targetSize, $side, $side);
+
+        ob_start();
+        imagepng($canvas);
+        $pngData = (string) ob_get_clean();
+
+        imagedestroy($image);
+        imagedestroy($canvas);
+
+        $filename = 'app-logos/' . Str::uuid() . '.png';
+        Storage::disk('public')->put($filename, $pngData);
+
+        if ($existingPath && Storage::disk('public')->exists($existingPath)) {
+            Storage::disk('public')->delete($existingPath);
+        }
+
+        return $filename;
     }
 }

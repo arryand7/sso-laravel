@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Maatwebsite\Excel\Facades\Excel;
@@ -205,5 +206,54 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['file' => 'Gagal import: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Bulk update selected users (roles/type).
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $baseRules = [
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['exists:users,id'],
+            'action' => ['required', 'in:roles_add,roles_replace,type_change'],
+        ];
+
+        $validated = $request->validate($baseRules);
+
+        $action = $validated['action'];
+        $users = User::whereIn('id', $validated['user_ids'])->get();
+
+        if (in_array($action, ['roles_add', 'roles_replace'], true)) {
+            $roleIds = $request->validate([
+                'roles' => ['required', 'array'],
+                'roles.*' => ['exists:roles,id'],
+            ])['roles'];
+
+            DB::transaction(function () use ($users, $roleIds, $action): void {
+                foreach ($users as $user) {
+                    if ($action === 'roles_add') {
+                        $user->roles()->syncWithoutDetaching($roleIds);
+                    } else {
+                        $user->roles()->sync($roleIds);
+                    }
+                }
+            });
+
+            $message = $action === 'roles_add'
+                ? 'Role berhasil ditambahkan ke user terpilih.'
+                : 'Role user terpilih berhasil diperbarui.';
+
+            return redirect()->route('admin.users.index')->with('status', $message);
+        }
+
+        $type = $request->validate([
+            'type' => ['required', 'in:student,teacher,parent,staff,admin'],
+        ])['type'];
+
+        User::whereIn('id', $validated['user_ids'])->update(['type' => $type]);
+
+        return redirect()->route('admin.users.index')
+            ->with('status', 'Tipe user berhasil diperbarui.');
     }
 }

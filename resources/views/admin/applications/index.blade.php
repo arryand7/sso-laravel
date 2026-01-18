@@ -36,8 +36,12 @@
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td class="px-4 py-3">
                     <div class="flex items-center">
-                        <div class="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mr-3">
-                            <span class="material-symbols-outlined">{{ $app->icon ?? 'apps' }}</span>
+                        <div class="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mr-3 overflow-hidden">
+                            @if($app->logo_url)
+                                <img src="{{ $app->logo_url }}" alt="Logo {{ $app->name }}" class="h-full w-full object-cover">
+                            @else
+                                <span class="material-symbols-outlined">{{ $app->icon ?? 'apps' }}</span>
+                            @endif
                         </div>
                         <div>
                             <div class="font-medium text-slate-900 dark:text-slate-100">{{ $app->name }}</div>

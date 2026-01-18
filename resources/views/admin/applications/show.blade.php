@@ -6,7 +6,13 @@
         <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-6 text-white">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center"><span class="material-symbols-outlined text-3xl">{{ $application->icon ?? 'apps' }}</span></div>
+                    <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center overflow-hidden">
+                        @if($application->logo_url)
+                            <img src="{{ $application->logo_url }}" alt="Logo {{ $application->name }}" class="h-full w-full object-cover">
+                        @else
+                            <span class="material-symbols-outlined text-3xl">{{ $application->icon ?? 'apps' }}</span>
+                        @endif
+                    </div>
                     <div><h1 class="text-2xl font-bold">{{ $application->name }}</h1><p class="text-blue-200">{{ $application->base_url }}</p></div>
                 </div>
                 <div class="flex space-x-2">

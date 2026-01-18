@@ -94,6 +94,8 @@ Route::middleware(['auth', 'role:admin|superadmin'])
     
     // User Management
     Route::resource('users', UserController::class);
+    Route::post('users/bulk-actions', [UserController::class, 'bulkUpdate'])
+         ->name('users.bulk-actions');
     Route::get('users/{user}/reset-password', [UserController::class, 'showResetPassword'])
          ->name('users.reset-password');
     Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])
