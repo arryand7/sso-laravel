@@ -71,45 +71,44 @@
     </form>
 </div>
 
-<form method="POST" action="{{ route('admin.users.bulk-actions') }}" id="bulk-action-form">
-    @csrf
-    <div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
-        <div class="flex flex-wrap gap-3 items-end">
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">Aksi</label>
-                <select name="action" required class="js-bulk-action px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                    <option value="roles_add">Tambah role</option>
-                    <option value="roles_replace">Ganti role</option>
-                    <option value="type_change">Ubah tipe user</option>
-                </select>
-            </div>
-            <div class="js-bulk-role-fields min-w-[220px] flex-1">
-                <label class="block text-sm text-gray-600 mb-1">Roles</label>
-                <div class="flex flex-wrap gap-2">
-                    @foreach($roles as $role)
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="rounded border-gray-300 text-blue-600">
-                            {{ $role->name }}
-                        </label>
-                    @endforeach
-                </div>
-            </div>
-            <div class="js-bulk-type-field hidden">
-                <label class="block text-sm text-gray-600 mb-1">Tipe User</label>
-                <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                    <option value="student">Student</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="parent">Parent</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </div>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <span class="material-symbols-outlined text-[20px]">done_all</span> Terapkan
-            </button>
-            <p class="text-xs text-gray-500">Centang user pada tabel untuk menerapkan.</p>
+<div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
+    <form method="POST" action="{{ route('admin.users.bulk-actions') }}" id="bulk-action-form" class="flex flex-wrap gap-3 items-end">
+        @csrf
+        <div>
+            <label class="block text-sm text-gray-600 mb-1">Aksi</label>
+            <select name="action" required class="js-bulk-action px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                <option value="roles_add">Tambah role</option>
+                <option value="roles_replace">Ganti role</option>
+                <option value="type_change">Ubah tipe user</option>
+            </select>
         </div>
-    </div>
+        <div class="js-bulk-role-fields min-w-[220px] flex-1">
+            <label class="block text-sm text-gray-600 mb-1">Roles</label>
+            <div class="flex flex-wrap gap-2">
+                @foreach($roles as $role)
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="rounded border-gray-300 text-blue-600">
+                        {{ $role->name }}
+                    </label>
+                @endforeach
+            </div>
+        </div>
+        <div class="js-bulk-type-field hidden">
+            <label class="block text-sm text-gray-600 mb-1">Tipe User</label>
+            <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="parent">Parent</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">done_all</span> Terapkan
+        </button>
+        <p class="text-xs text-gray-500">Centang user pada tabel untuk menerapkan.</p>
+    </form>
+</div>
 
 @php
     $currentSort = $sort ?? request('sort', 'name');
@@ -166,7 +165,7 @@
         @forelse($users as $user)
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td class="px-4 py-3">
-                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" class="js-user-checkbox rounded border-gray-300 text-blue-600">
+                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" form="bulk-action-form" class="js-user-checkbox rounded border-gray-300 text-blue-600">
                 </td>
                 <td class="px-4 py-3">
                     <div>
@@ -231,7 +230,6 @@
         </x-slot:footer>
     @endif
 </x-admin.table>
-</form>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
