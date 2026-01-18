@@ -57,7 +57,12 @@ class UserController extends Controller
             $direction = 'asc';
         }
 
-        $users = $query->orderBy($sort, $direction)->paginate(15)->withQueryString();
+        $perPage = (int) $request->input('per_page', 15);
+        if (!in_array($perPage, [10, 15, 25, 50, 100], true)) {
+            $perPage = 15;
+        }
+
+        $users = $query->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
         $roles = Role::all();
 
         return view('admin.users.index', [
@@ -65,6 +70,7 @@ class UserController extends Controller
             'roles' => $roles,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
         ]);
     }
 

@@ -56,6 +56,14 @@
                 @endforeach
             </select>
         </div>
+        <div>
+            <label class="block text-sm text-gray-600 mb-1">Tampilkan</label>
+            <select name="per_page" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                @foreach([10, 15, 25, 50, 100] as $size)
+                    <option value="{{ $size }}" {{ (int)request('per_page', $perPage ?? 15) === $size ? 'selected' : '' }}>{{ $size }}</option>
+                @endforeach
+            </select>
+        </div>
         <button type="submit" class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 flex items-center gap-2">
             <span class="material-symbols-outlined text-[20px]">search</span> Filter
         </button>
@@ -118,7 +126,12 @@
 @endphp
 
 <!-- Users Table -->
-<x-admin.table :ordering="false">
+<x-admin.table :ordering="false"
+    data-dt-paging="false"
+    data-dt-info="false"
+    data-dt-search="false"
+    data-dt-length-change="false"
+    data-dt-dom="<'row mb-3 align-items-center'<'col-sm-12 d-flex align-items-center gap-2'B>>t">
     <x-slot:head>
         <tr>
             <th class="px-4 py-3 text-left">

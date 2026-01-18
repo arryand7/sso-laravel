@@ -190,14 +190,20 @@
             document.querySelectorAll('.js-admin-table[data-datatable="true"]').forEach((table) => {
                 const $table = $(table);
                 const ordering = table.dataset.ordering !== 'false';
+                const paging = table.dataset.dtPaging ? table.dataset.dtPaging !== 'false' : true;
+                const searching = table.dataset.dtSearch ? table.dataset.dtSearch !== 'false' : true;
+                const info = table.dataset.dtInfo ? table.dataset.dtInfo !== 'false' : true;
+                const lengthChange = table.dataset.dtLengthChange ? table.dataset.dtLengthChange !== 'false' : true;
+                const domLayout = table.dataset.dtDom || "<'row mb-3 align-items-center'<'col-sm-12 col-md-7 d-flex align-items-center gap-2'B l><'col-sm-12 col-md-5 d-flex align-items-center justify-end'f>>t<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>";
 
                 $table.DataTable({
-                    paging: true,
+                    paging: paging,
                     ordering: ordering,
-                    info: true,
-                    lengthChange: true,
+                    info: info,
+                    lengthChange: lengthChange,
+                    searching: searching,
                     pageLength: 10,
-                    dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-7 d-flex align-items-center gap-2'B l><'col-sm-12 col-md-5 d-flex align-items-center justify-end'f>>t<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                    dom: domLayout,
                     buttons: [
                         { extend: 'copy', className: 'btn btn-secondary' },
                         { extend: 'csv', className: 'btn btn-secondary' },
