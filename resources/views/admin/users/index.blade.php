@@ -103,18 +103,48 @@
         </div>
     </div>
 
+@php
+    $currentSort = $sort ?? request('sort', 'name');
+    $currentDirection = $direction ?? request('direction', 'asc');
+    $nextDirection = function (string $field) use ($currentSort, $currentDirection) {
+        return $currentSort === $field && $currentDirection === 'asc' ? 'desc' : 'asc';
+    };
+    $sortArrow = function (string $field) use ($currentSort, $currentDirection) {
+        if ($currentSort !== $field) {
+            return '';
+        }
+        return $currentDirection === 'asc' ? '▲' : '▼';
+    };
+@endphp
+
 <!-- Users Table -->
-<x-admin.table>
+<x-admin.table :ordering="false">
     <x-slot:head>
         <tr>
             <th class="px-4 py-3 text-left">
                 <input type="checkbox" class="js-select-all rounded border-gray-300 text-blue-600">
             </th>
-            <th class="px-4 py-3 text-left">User</th>
-            <th class="px-4 py-3 text-left">Username</th>
-            <th class="px-4 py-3 text-left">Tipe</th>
+            <th class="px-4 py-3 text-left">
+                <a href="{{ route('admin.users.index', array_merge(request()->all(), ['sort' => 'name', 'direction' => $nextDirection('name')])) }}" class="inline-flex items-center gap-1">
+                    User <span class="text-xs text-slate-400">{{ $sortArrow('name') }}</span>
+                </a>
+            </th>
+            <th class="px-4 py-3 text-left">
+                <a href="{{ route('admin.users.index', array_merge(request()->all(), ['sort' => 'username', 'direction' => $nextDirection('username')])) }}" class="inline-flex items-center gap-1">
+                    Username <span class="text-xs text-slate-400">{{ $sortArrow('username') }}</span>
+                </a>
+            </th>
+            <th class="px-4 py-3 text-left">
+                <a href="{{ route('admin.users.index', array_merge(request()->all(), ['sort' => 'type', 'direction' => $nextDirection('type')])) }}" class="inline-flex items-center gap-1">
+                    Tipe <span class="text-xs text-slate-400">{{ $sortArrow('type') }}</span>
+                </a>
+            </th>
             <th class="px-4 py-3 text-left">Role</th>
-            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-left">
+                <a href="{{ route('admin.users.index', array_merge(request()->all(), ['sort' => 'status', 'direction' => $nextDirection('status')])) }}" class="inline-flex items-center gap-1">
+                    Status <span class="text-xs text-slate-400">{{ $sortArrow('status') }}</span>
+                </a>
+            </th>
             <th class="px-4 py-3 text-right">Aksi</th>
         </tr>
     </x-slot:head>

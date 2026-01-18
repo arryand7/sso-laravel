@@ -1,4 +1,4 @@
-@props([])
+@props(['ordering' => true])
 
 @php($serverPagination = isset($footer))
 
@@ -6,6 +6,7 @@
     <div class="overflow-x-auto">
         <table class="js-admin-table w-full text-sm text-slate-700 dark:text-slate-200 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_td]:px-4 [&_td]:py-3"
                data-datatable="true"
+               data-ordering="{{ $ordering ? 'true' : 'false' }}"
                data-server-pagination="{{ $serverPagination ? 'true' : 'false' }}">
             <thead class="bg-slate-50 dark:bg-slate-800/60 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">
                 {{ $head }}

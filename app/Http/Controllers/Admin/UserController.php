@@ -47,12 +47,24 @@ class UserController extends Controller
             $query->role($role);
         }
 
-        $users = $query->orderBy('name')->paginate(15)->withQueryString();
+        $sortable = ['name', 'username', 'type', 'status', 'email'];
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+        if (!in_array($sort, $sortable, true)) {
+            $sort = 'name';
+        }
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
+
+        $users = $query->orderBy($sort, $direction)->paginate(15)->withQueryString();
         $roles = Role::all();
 
         return view('admin.users.index', [
             'users' => $users,
             'roles' => $roles,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

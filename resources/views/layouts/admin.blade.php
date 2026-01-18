@@ -189,10 +189,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.js-admin-table[data-datatable="true"]').forEach((table) => {
                 const $table = $(table);
+                const ordering = table.dataset.ordering !== 'false';
 
                 $table.DataTable({
                     paging: true,
-                    ordering: true,
+                    ordering: ordering,
                     info: true,
                     lengthChange: true,
                     pageLength: 10,
