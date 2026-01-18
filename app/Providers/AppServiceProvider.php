@@ -40,6 +40,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         if (Schema::hasTable('settings')) {
+            $timezone = Setting::getValue('app', 'timezone', config('app.timezone'));
+            if (!empty($timezone)) {
+                config(['app.timezone' => $timezone]);
+                date_default_timezone_set($timezone);
+            }
+
             $emailSettings = Setting::group('email');
 
             if (!empty($emailSettings)) {

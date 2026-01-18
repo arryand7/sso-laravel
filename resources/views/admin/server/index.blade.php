@@ -188,6 +188,34 @@
             </div>
         </div>
 
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="material-symbols-outlined text-primary">schedule</span>
+                <div>
+                    <h2 class="text-lg font-bold">Time Zone</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Atur zona waktu default untuk seluruh aplikasi.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Zona Waktu</label>
+                    <select name="app[timezone]" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
+                        @php
+                            $tzOptions = ['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura', 'UTC'];
+                            $currentTz = old('app.timezone', $app['timezone'] ?? config('app.timezone'));
+                        @endphp
+                        @foreach($tzOptions as $tz)
+                            <option value="{{ $tz }}" {{ $currentTz === $tz ? 'selected' : '' }}>{{ $tz }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-slate-400 mt-2">Jika zona waktu belum tersedia, beri tahu tim IT untuk menambahkan.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="flex justify-end">
             <button type="submit" class="px-5 py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-blue-700 transition-colors">
                 Simpan Pengaturan Server

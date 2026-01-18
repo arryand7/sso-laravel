@@ -15,6 +15,7 @@ class ServerController extends Controller
         $oauthSettings = Setting::group('oauth');
         $emailSettings = Setting::group('email');
         $webSettings = Setting::group('web');
+        $appSettings = Setting::group('app');
 
         return view('admin.server.index', [
             'oauth' => [
@@ -42,6 +43,9 @@ class ServerController extends Controller
             'web' => [
                 'api_docs_url' => $webSettings['api_docs_url'] ?? '',
                 'postman_url' => $webSettings['postman_url'] ?? '',
+            ],
+            'app' => [
+                'timezone' => $appSettings['timezone'] ?? config('app.timezone'),
             ],
             'endpoints' => [
                 'issuer' => config('app.url'),
@@ -78,6 +82,7 @@ class ServerController extends Controller
             'email.test_address' => 'nullable|email|max:255',
             'web.api_docs_url' => 'nullable|url|max:255',
             'web.postman_url' => 'nullable|url|max:255',
+            'app.timezone' => 'nullable|timezone',
         ]);
 
         $action = $request->input('action');
@@ -118,7 +123,7 @@ class ServerController extends Controller
             return back()->with('status', 'Email uji berhasil dikirim ke '.$testAddress.'.');
         }
 
-        foreach (['oauth', 'email', 'web'] as $group) {
+        foreach (['oauth', 'email', 'web', 'app'] as $group) {
             foreach ($validated[$group] ?? [] as $key => $value) {
                 if ($group === 'email' && $key === 'scheme') {
                     $value = $this->normalizeScheme($value);
