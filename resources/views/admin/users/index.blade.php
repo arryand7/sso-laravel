@@ -126,12 +126,13 @@
 @endphp
 
 <!-- Users Table -->
-<x-admin.table :ordering="false"
-    data-dt-paging="false"
-    data-dt-info="false"
-    data-dt-search="false"
-    data-dt-length-change="false"
-    data-dt-dom="<'row mb-3 align-items-center'<'col-sm-12 d-flex align-items-center gap-2'B>>t">
+<x-admin.table
+    :ordering="false"
+    :dtPaging="false"
+    :dtInfo="false"
+    :dtSearch="true"
+    :dtLengthChange="false"
+    dtDom="<'row mb-3 align-items-center'<'col-sm-12 col-md-7 d-flex align-items-center gap-2'B><'col-sm-12 col-md-5 d-flex align-items-center justify-end'f>>t">
     <x-slot:head>
         <tr>
             <th class="px-4 py-3 text-left">
@@ -240,12 +241,46 @@
         const actionSelect = document.querySelector('.js-bulk-action');
         const roleFields = document.querySelector('.js-bulk-role-fields');
         const typeField = document.querySelector('.js-bulk-type-field');
+        const searchInput = document.querySelector('.dataTables_filter input');
 
         const updateFields = () => {
             if (!actionSelect || !roleFields || !typeField) return;
             const isType = actionSelect.value === 'type_change';
             roleFields.classList.toggle('hidden', isType);
             typeField.classList.toggle('hidden', !isType);
+        };
+
+        const bindServerSearch = () => {
+            if (!searchInput) return;
+
+            const params = new URLSearchParams(window.location.search);
+            const initial = params.get('search') || '';
+            searchInput.value = initial;
+
+            const wrapper = searchInput.closest('.dataTables_filter');
+            if (wrapper) {
+                searchInput.setAttribute('placeholder', 'kata kunci pencarian');
+            }
+
+            const $input = window.jQuery ? window.jQuery(searchInput) : null;
+            if ($input) {
+                $input.off('.DT');
+            }
+
+            let timer = null;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const value = searchInput.value.trim();
+                    if (value) {
+                        params.set('search', value);
+                    } else {
+                        params.delete('search');
+                    }
+                    params.set('page', '1');
+                    window.location.search = params.toString();
+                }, 450);
+            });
         };
 
         if (selectAll) {
@@ -278,6 +313,8 @@
             actionSelect.addEventListener('change', updateFields);
             updateFields();
         }
+
+        bindServerSearch();
     });
 </script>
 @endsection
