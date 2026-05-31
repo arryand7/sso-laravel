@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\OAuth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
 class WellKnownController extends Controller
 {
@@ -12,14 +11,14 @@ class WellKnownController extends Controller
      */
     public function openidConfiguration()
     {
-        $issuer = config('app.url');
+        $issuer = rtrim((string) config('app.url'), '/');
 
         return response()->json([
             'issuer' => $issuer,
-            'authorization_endpoint' => $issuer . '/oauth/authorize',
-            'token_endpoint' => $issuer . '/oauth/token',
-            'userinfo_endpoint' => $issuer . '/oauth/userinfo',
-            'jwks_uri' => $issuer . '/.well-known/jwks.json',
+            'authorization_endpoint' => $issuer.'/oauth/authorize',
+            'token_endpoint' => $issuer.'/oauth/token',
+            'userinfo_endpoint' => $issuer.'/oauth/userinfo',
+            'jwks_uri' => $issuer.'/.well-known/jwks.json',
             'response_types_supported' => ['code'],
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
@@ -42,17 +41,15 @@ class WellKnownController extends Controller
      */
     public function jwks()
     {
-        // Get Passport's public key
-        $publicKeyPath = storage_path('oauth-public.key');
-        
-        if (!file_exists($publicKeyPath)) {
+        $publicKey = $this->publicKey();
+
+        if (! $publicKey) {
             return response()->json(['keys' => []]);
         }
 
-        $publicKey = file_get_contents($publicKeyPath);
         $keyInfo = openssl_pkey_get_details(openssl_pkey_get_public($publicKey));
 
-        if (!$keyInfo || !isset($keyInfo['rsa'])) {
+        if (! $keyInfo || ! isset($keyInfo['rsa'])) {
             return response()->json(['keys' => []]);
         }
 
@@ -62,11 +59,41 @@ class WellKnownController extends Controller
                 'alg' => 'RS256',
                 'use' => 'sig',
                 'kid' => md5($publicKey),
-                'n' => rtrim(strtr(base64_encode($keyInfo['rsa']['n']), '+/', '-_'), '='),
-                'e' => rtrim(strtr(base64_encode($keyInfo['rsa']['e']), '+/', '-_'), '='),
+                'n' => $this->base64UrlEncode($keyInfo['rsa']['n']),
+                'e' => $this->base64UrlEncode($keyInfo['rsa']['e']),
             ],
         ];
 
         return response()->json(['keys' => $keys]);
+    }
+
+    protected function publicKey(): ?string
+    {
+        $configured = config('passport.public_key');
+        if ($configured) {
+            return $this->normalizeKey($configured);
+        }
+
+        $publicKeyPath = storage_path('oauth-public.key');
+
+        if (! file_exists($publicKeyPath)) {
+            return null;
+        }
+
+        return file_get_contents($publicKeyPath) ?: null;
+    }
+
+    protected function normalizeKey(string $key): string
+    {
+        if (str_contains($key, '\\n')) {
+            return str_replace('\\n', "\n", $key);
+        }
+
+        return $key;
+    }
+
+    protected function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 }

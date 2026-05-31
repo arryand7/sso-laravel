@@ -8,8 +8,8 @@ use App\Models\LoginLog;
 use App\Models\User;
 use App\Services\OidcTokenService;
 use Illuminate\Http\Request;
-use Laravel\Passport\Passport;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
+use Laravel\Passport\Passport;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -28,14 +28,16 @@ class TokenController extends Controller
 
         $payload = json_decode($passportResponse->getContent(), true);
 
-        if (!is_array($payload) || !isset($payload['access_token'])) {
+        if (! is_array($payload) || ! isset($payload['access_token'])) {
             return $passportResponse;
         }
 
         $tokenModel = Passport::tokenModel();
-        $token = $tokenModel::find($payload['access_token']);
+        $tokenId = $payload['access_token_id'] ?? $this->tokenIdFromJwt($payload['access_token']);
+        $token = $tokenId ? $tokenModel::find($tokenId) : null;
+        unset($payload['access_token_id']);
 
-        if (!$token || !$token->user_id) {
+        if (! $token || ! $token->user_id) {
             return $passportResponse;
         }
 
@@ -45,12 +47,12 @@ class TokenController extends Controller
             : [];
         $scopes = array_values(array_unique(array_filter(array_merge($scopes, $requestedScopes))));
 
-        if (!in_array('openid', $scopes, true)) {
+        if (! in_array('openid', $scopes, true)) {
             return $passportResponse;
         }
 
         $user = User::find($token->user_id);
-        if (!$user) {
+        if (! $user) {
             return $passportResponse;
         }
 
@@ -72,5 +74,30 @@ class TokenController extends Controller
             $passportResponse->getStatusCode(),
             $passportResponse->headers->all()
         );
+    }
+
+    protected function tokenIdFromJwt(string $accessToken): ?string
+    {
+        $segments = explode('.', $accessToken);
+
+        if (count($segments) < 2) {
+            return null;
+        }
+
+        $payload = json_decode($this->base64UrlDecode($segments[1]), true);
+
+        return is_array($payload) && isset($payload['jti'])
+            ? (string) $payload['jti']
+            : null;
+    }
+
+    protected function base64UrlDecode(string $value): string
+    {
+        $remainder = strlen($value) % 4;
+        if ($remainder) {
+            $value .= str_repeat('=', 4 - $remainder);
+        }
+
+        return (string) base64_decode(strtr($value, '-_', '+/'), true);
     }
 }

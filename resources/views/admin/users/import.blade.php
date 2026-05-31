@@ -15,8 +15,8 @@
             <div class="bg-blue-50 rounded-lg p-4 mb-6">
                 <h4 class="font-medium text-blue-800 mb-2">Format Kolom:</h4>
                 <ul class="text-sm text-blue-700 list-disc list-inside">
-                    <li>name (wajib)</li><li>username (wajib)</li><li>email</li><li>type (student/teacher/parent/staff)</li>
-                    <li>nis</li><li>nip</li><li>role</li>
+                    <li>name (wajib)</li><li>username (wajib, bisa diganti nis/nip jika kosong)</li><li>email</li><li>type (student/teacher/parent/staff/admin)</li>
+                    <li>nis</li><li>nip</li><li>role (boleh lebih dari satu, pisahkan koma)</li><li>status</li><li>password</li>
                 </ul>
             </div>
             <div class="flex justify-end space-x-3">

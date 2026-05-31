@@ -21,12 +21,12 @@ class ServerController extends Controller
             'oauth' => [
                 'google_enabled' => Setting::getBool('oauth', 'google_enabled'),
                 'google_client_id' => $oauthSettings['google_client_id'] ?? '',
-                'google_client_secret' => $oauthSettings['google_client_secret'] ?? '',
+                'google_client_secret_set' => ! empty($oauthSettings['google_client_secret']),
                 'google_redirect_uri' => $oauthSettings['google_redirect_uri'] ?? '',
                 'google_allowed_domains' => $oauthSettings['google_allowed_domains'] ?? '',
                 'facebook_enabled' => Setting::getBool('oauth', 'facebook_enabled'),
                 'facebook_client_id' => $oauthSettings['facebook_client_id'] ?? '',
-                'facebook_client_secret' => $oauthSettings['facebook_client_secret'] ?? '',
+                'facebook_client_secret_set' => ! empty($oauthSettings['facebook_client_secret']),
                 'facebook_redirect_uri' => $oauthSettings['facebook_redirect_uri'] ?? '',
             ],
             'email' => [
@@ -34,7 +34,7 @@ class ServerController extends Controller
                 'host' => $emailSettings['host'] ?? config('mail.mailers.smtp.host'),
                 'port' => $emailSettings['port'] ?? config('mail.mailers.smtp.port'),
                 'username' => $emailSettings['username'] ?? config('mail.mailers.smtp.username'),
-                'password' => $emailSettings['password'] ?? '',
+                'password_set' => ! empty($emailSettings['password']),
                 'scheme' => $this->normalizeScheme($emailSettings['scheme'] ?? config('mail.mailers.smtp.scheme')),
                 'from_address' => $emailSettings['from_address'] ?? config('mail.from.address'),
                 'from_name' => $emailSettings['from_name'] ?? config('mail.from.name'),
@@ -92,7 +92,7 @@ class ServerController extends Controller
         }
 
         if ($action === 'test-email') {
-            if (!$testAddress) {
+            if (! $testAddress) {
                 return back()->withErrors(['email.test_address' => 'Alamat email tujuan wajib diisi.']);
             }
 
@@ -125,6 +125,10 @@ class ServerController extends Controller
 
         foreach (['oauth', 'email', 'web', 'app'] as $group) {
             foreach ($validated[$group] ?? [] as $key => $value) {
+                if ($this->isSensitiveSetting($group, $key) && ($value === null || $value === '')) {
+                    continue;
+                }
+
                 if ($group === 'email' && $key === 'scheme') {
                     $value = $this->normalizeScheme($value);
                 }
@@ -180,7 +184,7 @@ class ServerController extends Controller
 
     protected function normalizeScheme(?string $scheme): ?string
     {
-        if (!$scheme) {
+        if (! $scheme) {
             return null;
         }
 
@@ -195,5 +199,14 @@ class ServerController extends Controller
         }
 
         return $scheme;
+    }
+
+    protected function isSensitiveSetting(string $group, string $key): bool
+    {
+        return in_array($group.'.'.$key, [
+            'email.password',
+            'oauth.google_client_secret',
+            'oauth.facebook_client_secret',
+        ], true);
     }
 }

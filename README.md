@@ -11,6 +11,8 @@ Sabira Connect adalah aplikasi Single Sign-On (SSO) untuk ekosistem sekolah. Apl
 - Server settings untuk OAuth services (Google, Facebook), outgoing mail, dan dokumentasi API.
 - Login Google (manual OAuth flow) dengan filter domain sekolah.
 - Rate limiting untuk endpoint /login dan /oauth/token.
+- Import user CSV/XLS/XLSX dan export log login CSV.
+- Secret OAuth/SMTP dienkripsi di database dan tidak ditampilkan ulang di UI.
 
 ## Flow aplikasi
 
@@ -119,12 +121,22 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 php artisan passport:install
+npm install
+npm run build
 php artisan serve
 ```
 
 Catatan:
-- Untuk OIDC token, pastikan `passport:install` atau `passport:keys` sudah dijalankan.
+- Untuk OIDC token, pastikan `passport:install` atau `passport:keys` sudah dijalankan. Production dapat memakai `PASSPORT_PRIVATE_KEY` dan `PASSPORT_PUBLIC_KEY` di `.env`.
 - DB default menggunakan SQLite, sesuaikan `.env` jika menggunakan MySQL.
+- Jalankan `php artisan storage:link` jika menggunakan upload logo aplikasi.
+
+### Checklist production
+- Set `APP_ENV=production`, `APP_DEBUG=false`, dan `APP_URL` ke domain publik SSO.
+- Gunakan HTTPS dan set `SESSION_SECURE_COOKIE=true`.
+- Jalankan `php artisan migrate --force` untuk menerapkan migration, termasuk enkripsi secret lama.
+- Jalankan `composer install --no-dev --optimize-autoloader`, `npm ci`, `npm run build`, lalu `php artisan optimize`.
+- Ganti password akun seed default sebelum membuka akses ke jaringan sekolah.
 
 ## Sinkronisasi user
 

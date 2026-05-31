@@ -64,26 +64,27 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::clear($loginKey);
             $user = Auth::user();
-            
+
             // Check if user is active
             if ($user->status !== 'active') {
                 Auth::logout();
+
                 return back()->withErrors([
                     'username' => 'Akun Anda tidak aktif. Silakan hubungi administrator.',
                 ])->withInput($request->only('username'));
             }
 
             $request->session()->regenerate();
-            
+
             // Update last login
             $user->update(['last_login_at' => now()]);
-            
+
             // Record login log
             LoginLog::recordLogin($user, 'portal');
 
             // Redirect to continue URL or dashboard
             $continueUrl = $request->input('continue');
-            if ($continueUrl && filter_var($continueUrl, FILTER_VALIDATE_URL)) {
+            if ($continueUrl && $this->isSafeRedirect($continueUrl)) {
                 return redirect($continueUrl);
             }
 
@@ -114,5 +115,17 @@ class LoginController extends Controller
         $username = strtolower((string) $request->input('username', 'guest'));
 
         return $username.'|'.$request->ip();
+    }
+
+    protected function isSafeRedirect(string $url): bool
+    {
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return true;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+
+        return $host && $appHost && $host === $appHost;
     }
 }

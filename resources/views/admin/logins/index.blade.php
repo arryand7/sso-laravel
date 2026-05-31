@@ -1,7 +1,13 @@
 @extends('layouts.admin')
 @section('page-title', 'Log Login')
 @section('content')
-<div class="mb-6"><h2 class="text-2xl font-bold text-gray-900">Log Login</h2><p class="text-gray-600">Riwayat login user ke semua aplikasi</p></div>
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Log Login</h2>
+        <p class="text-gray-600">Riwayat login user ke semua aplikasi</p>
+    </div>
+    <a href="{{ route('admin.logins.export', request()->query()) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Export CSV</a>
+</div>
 
 <div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
     <form method="GET" class="flex flex-wrap gap-4 items-end">

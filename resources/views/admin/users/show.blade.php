@@ -17,11 +17,13 @@
                         <p class="text-blue-200">{{ '@' . $user->username }}</p>
                     </div>
                 </div>
-                <div class="flex space-x-2">
-                    <a href="{{ route('admin.users.edit', $user) }}" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[20px]">edit</span> Edit
-                    </a>
-                </div>
+                @if(auth()->user()?->hasRole('superadmin') || ! $user->hasRole('superadmin'))
+                    <div class="flex space-x-2">
+                        <a href="{{ route('admin.users.edit', $user) }}" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">edit</span> Edit
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
         

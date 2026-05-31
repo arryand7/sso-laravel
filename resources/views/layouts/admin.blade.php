@@ -54,10 +54,14 @@
         .justify-end { justify-content: flex-end; }
         .gap-2 { gap: 0.5rem; }
         .mb-3 { margin-bottom: 0.75rem; }
-        .btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer; }
-        .btn-secondary { background: #f1f5f9; }
+        .btn { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.45rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0; background: #fff; color: #334155; cursor: pointer; box-shadow: 0 1px 1px rgb(15 23 42 / 0.03); }
+        .btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+        .btn-secondary { background: #fff; }
         .btn-group { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
-        .dt-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .dt-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .dt-button-collection { border: 1px solid #e2e8f0 !important; border-radius: 0.75rem !important; box-shadow: 0 18px 50px rgb(15 23 42 / 0.14) !important; padding: 0.35rem !important; }
+        .dt-button-collection .dt-button { display: flex !important; width: 100%; justify-content: flex-start; margin: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 0.5rem !important; }
+        .dt-button-collection .dt-button:hover { background: #f1f5f9 !important; }
         .dataTables_length { display: flex; align-items: center; }
         .dataTables_filter { display: flex; justify-content: flex-end; }
         .dataTables_wrapper .dataTables_length label,
@@ -73,7 +77,10 @@
         .dataTables_wrapper table.dataTable.no-footer { border-bottom: 1px solid #e2e8f0; }
 
         .dark .btn { border-color: #334155; background: #0f172a; color: #e2e8f0; }
-        .dark .btn-secondary { background: #111827; }
+        .dark .btn:hover { background: #111827; border-color: #475569; color: #fff; }
+        .dark .btn-secondary { background: #0f172a; }
+        .dark .dt-button-collection { border-color: #334155 !important; background: #0f172a !important; }
+        .dark .dt-button-collection .dt-button:hover { background: #1e293b !important; }
         .dark .dataTables_wrapper .dataTables_length label,
         .dark .dataTables_wrapper .dataTables_filter label { color: #cbd5f5; }
         .dark .dataTables_wrapper .dataTables_filter input,
@@ -205,12 +212,19 @@
                     pageLength: 10,
                     dom: domLayout,
                     buttons: [
-                        { extend: 'copy', className: 'btn btn-secondary' },
-                        { extend: 'csv', className: 'btn btn-secondary' },
-                        { extend: 'excel', className: 'btn btn-secondary' },
-                        { extend: 'pdf', className: 'btn btn-secondary' },
-                        { extend: 'print', className: 'btn btn-secondary' },
-                        { extend: 'colvis', className: 'btn btn-secondary' },
+                        {
+                            extend: 'collection',
+                            text: '📥 Export Data',
+                            className: 'btn btn-secondary',
+                            buttons: [
+                                { extend: 'copy', text: 'Copy' },
+                                { extend: 'csv', text: 'CSV' },
+                                { extend: 'excel', text: 'Excel' },
+                                { extend: 'pdf', text: 'PDF' },
+                                { extend: 'print', text: 'Print' },
+                            ],
+                        },
+                        { extend: 'colvis', text: 'Kolom', className: 'btn btn-secondary' },
                     ],
                     language: {
                         search: 'Cari:',

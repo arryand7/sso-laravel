@@ -5,13 +5,14 @@
     'dtSearch' => true,
     'dtLengthChange' => true,
     'dtDom' => null,
+    'framed' => true,
 ])
 
 @php($serverPagination = isset($footer))
 
-<div {{ $attributes->merge(['class' => 'rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm']) }}>
+<div {{ $attributes->merge(['class' => $framed ? 'rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm' : '']) }}>
     <div class="overflow-x-auto">
-        <table class="js-admin-table w-full text-sm text-slate-700 dark:text-slate-200 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_td]:px-4 [&_td]:py-3"
+        <table class="js-admin-table w-full text-sm text-slate-700 dark:text-slate-200 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-semibold [&_td]:px-4 [&_td]:py-3.5"
                data-datatable="true"
                data-ordering="{{ $ordering ? 'true' : 'false' }}"
                data-dt-paging="{{ $dtPaging ? 'true' : 'false' }}"

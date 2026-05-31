@@ -43,7 +43,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Client Secret</label>
-                            <input type="password" name="oauth[google_client_secret]" value="{{ old('oauth.google_client_secret', $oauth['google_client_secret']) }}" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
+                            <input type="password" name="oauth[google_client_secret]" value="" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900" placeholder="{{ $oauth['google_client_secret_set'] ? 'Tersimpan - isi untuk mengganti' : '' }}">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Redirect URI</label>
@@ -73,7 +73,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">App Secret</label>
-                            <input type="password" name="oauth[facebook_client_secret]" value="{{ old('oauth.facebook_client_secret', $oauth['facebook_client_secret']) }}" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
+                            <input type="password" name="oauth[facebook_client_secret]" value="" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900" placeholder="{{ $oauth['facebook_client_secret_set'] ? 'Tersimpan - isi untuk mengganti' : '' }}">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Redirect URI</label>
@@ -122,7 +122,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Password</label>
-                    <input type="password" name="email[password]" value="{{ old('email.password', $email['password']) }}" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900">
+                    <input type="password" name="email[password]" value="" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900" placeholder="{{ $email['password_set'] ? 'Tersimpan - isi untuk mengganti' : '' }}">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">From Address</label>

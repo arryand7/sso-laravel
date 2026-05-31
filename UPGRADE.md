@@ -15,8 +15,9 @@ Script `scripts/upgrade.sh` menjalankan langkah berikut:
 2. `git fetch --prune` dari `origin`.
 3. `git pull --ff-only` untuk menghindari merge otomatis.
 4. `composer install` dengan `--no-dev` dan autoloader optimize.
-5. `php artisan migrate --force`.
-6. `php artisan optimize` untuk refresh cache config/route/view.
+5. `npm ci` dan `npm run build` jika `package-lock.json` tersedia.
+6. `php artisan migrate --force`.
+7. `php artisan optimize` untuk refresh cache config/route/view.
 
 ## Prasyarat sebelum upgrade
 - Akses jaringan ke GitHub.
@@ -28,6 +29,8 @@ Script `scripts/upgrade.sh` menjalankan langkah berikut:
 git fetch --prune origin
 git pull --ff-only origin <branch>
 COMPOSER_ALLOW_SUPERUSER=1 php /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+npm ci
+npm run build
 php artisan migrate --force
 php artisan optimize
 ```
@@ -35,16 +38,18 @@ php artisan optimize
 ## Variabel opsional
 - `COMPOSER_BIN` untuk override path composer (default `composer`).
 - `PHP_BIN` untuk override binary PHP (default `php`).
+- `NPM_BIN` untuk override binary npm (default `npm`).
 
 Contoh:
 ```bash
-COMPOSER_BIN=/usr/local/bin/composer PHP_BIN=/usr/bin/php8.4 bash scripts/upgrade.sh
+COMPOSER_BIN=/usr/local/bin/composer PHP_BIN=/usr/bin/php8.4 NPM_BIN=/usr/bin/npm bash scripts/upgrade.sh
 ```
 
 ## Saran operasional
 - Lakukan backup database sebelum upgrade besar.
 - Jalankan upgrade di jam low traffic.
 - Cek halaman login dan admin setelah upgrade.
+- Pastikan Node.js/npm tersedia jika server production membangun asset langsung dari repository.
 
 ## Catatan
 - Jika ada perubahan lokal pada file *tracked*, simpan dulu (commit/stash) sebelum upgrade.

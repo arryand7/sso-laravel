@@ -16,6 +16,7 @@ fi
 
 composer_bin="${COMPOSER_BIN:-composer}"
 php_bin="${PHP_BIN:-php}"
+npm_bin="${NPM_BIN:-npm}"
 remote="origin"
 branch="$(git rev-parse --abbrev-ref HEAD)"
 
@@ -35,6 +36,14 @@ git pull --ff-only "$remote" "$branch"
 if [ -f composer.json ]; then
   echo "Installing Composer dependencies..."
   COMPOSER_ALLOW_SUPERUSER=1 "$php_bin" "$composer_bin" install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+fi
+
+if [ -f package-lock.json ]; then
+  echo "Installing Node dependencies..."
+  "$npm_bin" ci
+
+  echo "Building frontend assets..."
+  "$npm_bin" run build
 fi
 
 if [ -f artisan ]; then

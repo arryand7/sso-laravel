@@ -3,12 +3,63 @@
 @section('page-title', 'Manajemen User')
 
 @section('content')
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-wrap justify-between items-center gap-4 mb-4">
     <div>
         <h2 class="text-2xl font-bold text-gray-900">Daftar User</h2>
         <p class="text-gray-600">Kelola semua user di sistem Sabira Connect</p>
     </div>
-    <div class="flex space-x-3">
+    <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="relative js-bulk-menu-wrap hidden">
+            <button type="button" class="js-bulk-menu-button px-4 py-2 border border-slate-300 bg-white text-slate-700 rounded-lg hover:bg-slate-50 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">checklist</span>
+                Aksi Massal
+                <span class="js-selected-count inline-flex min-w-5 justify-center rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white">0</span>
+                <span class="material-symbols-outlined text-[18px]">expand_more</span>
+            </button>
+            <div class="js-bulk-menu hidden absolute right-0 z-20 mt-2 w-[min(92vw,420px)] rounded-lg border border-slate-200 bg-white p-4 shadow-xl">
+                <form method="POST" action="{{ route('admin.users.bulk-actions') }}" id="bulk-action-form" class="space-y-4">
+                    @csrf
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Aksi</label>
+                            <select name="action" required class="js-bulk-action w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                                <option value="roles_add">Tambah role</option>
+                                <option value="roles_replace">Ganti role</option>
+                                <option value="type_change">Ubah tipe user</option>
+                            </select>
+                        </div>
+                        <div class="js-bulk-type-field hidden">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Tipe User</label>
+                            <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="parent">Parent</option>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="js-bulk-role-fields sm:col-span-2">
+                            <label class="block text-xs font-medium text-slate-500 mb-2">Roles</label>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($roles as $role)
+                                    <label class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-slate-50">
+                                        <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="rounded border-gray-300 text-blue-600">
+                                        {{ $role->name }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                        <p class="text-xs text-slate-500"><span class="js-selected-count-text">0 user</span> dipilih</p>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">done_all</span>
+                            Terapkan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <a href="{{ route('admin.users.import') }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2">
             <span class="material-symbols-outlined text-[20px]">upload_file</span> Import
         </a>
@@ -16,98 +67,6 @@
             <span class="material-symbols-outlined text-[20px]">add</span> Tambah User
         </a>
     </div>
-</div>
-
-<!-- Filters -->
-<div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
-    <form method="GET" class="flex flex-wrap gap-4 items-end">
-        <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm text-gray-600 mb-1">Cari</label>
-            <input type="text" name="search" value="{{ request('search') }}" 
-                   placeholder="Nama, username, email, NIS, NIP..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-        </div>
-        <div>
-            <label class="block text-sm text-gray-600 mb-1">Tipe</label>
-            <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                <option value="">Semua</option>
-                <option value="student" {{ request('type') === 'student' ? 'selected' : '' }}>Student</option>
-                <option value="teacher" {{ request('type') === 'teacher' ? 'selected' : '' }}>Teacher</option>
-                <option value="parent" {{ request('type') === 'parent' ? 'selected' : '' }}>Parent</option>
-                <option value="staff" {{ request('type') === 'staff' ? 'selected' : '' }}>Staff</option>
-                <option value="admin" {{ request('type') === 'admin' ? 'selected' : '' }}>Admin</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm text-gray-600 mb-1">Status</label>
-            <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                <option value="">Semua</option>
-                <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
-                <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>Suspended</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm text-gray-600 mb-1">Role</label>
-            <select name="role" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                <option value="">Semua</option>
-                @foreach($roles as $role)
-                    <option value="{{ $role->name }}" {{ request('role') === $role->name ? 'selected' : '' }}>{{ $role->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm text-gray-600 mb-1">Tampilkan</label>
-            <select name="per_page" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                @foreach([10, 15, 25, 50, 100] as $size)
-                    <option value="{{ $size }}" {{ (int)request('per_page', $perPage ?? 15) === $size ? 'selected' : '' }}>{{ $size }}</option>
-                @endforeach
-            </select>
-        </div>
-        <button type="submit" class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">search</span> Filter
-        </button>
-        <a href="{{ route('admin.users.index') }}" class="px-4 py-2 text-gray-600 hover:text-gray-900">Reset</a>
-    </form>
-</div>
-
-<div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
-    <form method="POST" action="{{ route('admin.users.bulk-actions') }}" id="bulk-action-form" class="flex flex-wrap gap-3 items-end">
-        @csrf
-        <div>
-            <label class="block text-sm text-gray-600 mb-1">Aksi</label>
-            <select name="action" required class="js-bulk-action px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                <option value="roles_add">Tambah role</option>
-                <option value="roles_replace">Ganti role</option>
-                <option value="type_change">Ubah tipe user</option>
-            </select>
-        </div>
-        <div class="js-bulk-role-fields min-w-[220px] flex-1">
-            <label class="block text-sm text-gray-600 mb-1">Roles</label>
-            <div class="flex flex-wrap gap-2">
-                @foreach($roles as $role)
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="rounded border-gray-300 text-blue-600">
-                        {{ $role->name }}
-                    </label>
-                @endforeach
-            </div>
-        </div>
-        <div class="js-bulk-type-field hidden">
-            <label class="block text-sm text-gray-600 mb-1">Tipe User</label>
-            <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="parent">Parent</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-            </select>
-        </div>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">done_all</span> Terapkan
-        </button>
-        <p class="text-xs text-gray-500">Centang user pada tabel untuk menerapkan.</p>
-    </form>
 </div>
 
 @php
@@ -125,13 +84,67 @@
 @endphp
 
 <!-- Users Table -->
+<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="border-b border-slate-100 dark:border-slate-800 p-4">
+        <form method="GET" class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_140px_150px_150px_120px_auto_auto] lg:items-end">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Cari</label>
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Nama, username, email, NIS, NIP..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Tipe</label>
+                <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                    <option value="">Semua</option>
+                    <option value="student" {{ request('type') === 'student' ? 'selected' : '' }}>Student</option>
+                    <option value="teacher" {{ request('type') === 'teacher' ? 'selected' : '' }}>Teacher</option>
+                    <option value="parent" {{ request('type') === 'parent' ? 'selected' : '' }}>Parent</option>
+                    <option value="staff" {{ request('type') === 'staff' ? 'selected' : '' }}>Staff</option>
+                    <option value="admin" {{ request('type') === 'admin' ? 'selected' : '' }}>Admin</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                    <option value="">Semua</option>
+                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>Suspended</option>
+                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Role</label>
+                <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                    <option value="">Semua</option>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->name }}" {{ request('role') === $role->name ? 'selected' : '' }}>{{ $role->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Tampilkan</label>
+                <select name="per_page" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                    @foreach([10, 15, 25, 50, 100] as $size)
+                        <option value="{{ $size }}" {{ (int) request('per_page', $perPage ?? 15) === $size ? 'selected' : '' }}>{{ $size }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">search</span> Filter
+            </button>
+            <a href="{{ route('admin.users.index') }}" class="px-4 py-2 text-center text-gray-600 hover:text-gray-900">Reset</a>
+        </form>
+    </div>
+    <div class="p-4">
 <x-admin.table
     :ordering="false"
     :dtPaging="false"
     :dtInfo="false"
-    :dtSearch="true"
+    :dtSearch="false"
     :dtLengthChange="false"
-    dtDom="<'row mb-3 align-items-center'<'col-sm-12 col-md-7 d-flex align-items-center gap-2'B><'col-sm-12 col-md-5 d-flex align-items-center justify-end'f>>t">
+    :framed="false"
+    dtDom="<'row mb-3 align-items-center'<'col-sm-12 d-flex align-items-center justify-end gap-2'B>>t">
     <x-slot:head>
         <tr>
             <th class="px-4 py-3 text-left">
@@ -163,17 +176,20 @@
     </x-slot:head>
     <x-slot:body>
         @forelse($users as $user)
+            @php
+                $canManageRow = auth()->user()?->hasRole('superadmin') || ! $user->hasRole('superadmin');
+            @endphp
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                <td class="px-4 py-3">
-                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" form="bulk-action-form" class="js-user-checkbox rounded border-gray-300 text-blue-600">
+                <td class="px-4 py-3.5">
+                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" form="bulk-action-form" class="js-user-checkbox rounded border-gray-300 text-blue-600 disabled:opacity-40" {{ $canManageRow ? '' : 'disabled' }}>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3.5">
                     <div>
                         <div class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</div>
                         <div class="text-sm text-slate-500 dark:text-slate-400">{{ $user->email ?? '-' }}</div>
                     </div>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3.5">
                     <span class="text-slate-900 dark:text-slate-100">{{ $user->username }}</span>
                     @if($user->nis)
                         <div class="text-xs text-slate-500 dark:text-slate-400">NIS: {{ $user->nis }}</div>
@@ -181,15 +197,15 @@
                         <div class="text-xs text-slate-500 dark:text-slate-400">NIP: {{ $user->nip }}</div>
                     @endif
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3.5">
                     <span class="capitalize text-slate-700 dark:text-slate-300">{{ $user->type }}</span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3.5">
                     @foreach($user->roles as $role)
                         <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">{{ $role->name }}</span>
                     @endforeach
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3.5">
                     @if($user->status === 'active')
                         <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
                     @elseif($user->status === 'suspended')
@@ -198,21 +214,23 @@
                         <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending</span>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-right">
+                <td class="px-4 py-3.5 text-right">
                     <div class="flex justify-end space-x-2">
-                        <a href="{{ route('admin.users.show', $user) }}" class="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" title="Lihat">
+                        <a href="{{ route('admin.users.show', $user) }}" class="text-slate-400/70 transition-colors hover:text-slate-700 dark:text-slate-500/70 dark:hover:text-slate-200" title="Lihat">
                             <span class="material-symbols-outlined text-[20px]">visibility</span>
                         </a>
-                        <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-500 hover:text-blue-600" title="Edit">
-                            <span class="material-symbols-outlined text-[20px]">edit</span>
-                        </a>
-                        <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline" onsubmit="return confirm('Yakin hapus user ini?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-rose-500 hover:text-rose-600" title="Hapus">
-                                <span class="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                        </form>
+                        @if($canManageRow)
+                            <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-500/60 transition-colors hover:text-blue-600" title="Edit">
+                                <span class="material-symbols-outlined text-[20px]">edit</span>
+                            </a>
+                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline" onsubmit="return confirm('Yakin hapus user ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-rose-500/60 transition-colors hover:text-rose-600" title="Hapus">
+                                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -230,16 +248,22 @@
         </x-slot:footer>
     @endif
 </x-admin.table>
+    </div>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const selectAll = document.querySelector('.js-select-all');
-        const checkboxes = () => Array.from(document.querySelectorAll('.js-user-checkbox'));
+        const checkboxes = () => Array.from(document.querySelectorAll('.js-user-checkbox:not(:disabled)'));
         const form = document.getElementById('bulk-action-form');
         const actionSelect = document.querySelector('.js-bulk-action');
         const roleFields = document.querySelector('.js-bulk-role-fields');
         const typeField = document.querySelector('.js-bulk-type-field');
-        const searchInput = document.querySelector('.dataTables_filter input');
+        const bulkWrap = document.querySelector('.js-bulk-menu-wrap');
+        const bulkButton = document.querySelector('.js-bulk-menu-button');
+        const bulkMenu = document.querySelector('.js-bulk-menu');
+        const selectedCounts = Array.from(document.querySelectorAll('.js-selected-count'));
+        const selectedCountText = document.querySelector('.js-selected-count-text');
 
         const updateFields = () => {
             if (!actionSelect || !roleFields || !typeField) return;
@@ -248,37 +272,29 @@
             typeField.classList.toggle('hidden', !isType);
         };
 
-        const bindServerSearch = () => {
-            if (!searchInput) return;
+        const updateBulkState = () => {
+            const boxes = checkboxes();
+            const selected = boxes.filter((cb) => cb.checked).length;
 
-            const params = new URLSearchParams(window.location.search);
-            const initial = params.get('search') || '';
-            searchInput.value = initial;
-
-            const wrapper = searchInput.closest('.dataTables_filter');
-            if (wrapper) {
-                searchInput.setAttribute('placeholder', 'kata kunci pencarian');
+            if (bulkWrap) {
+                bulkWrap.classList.toggle('hidden', selected === 0);
+            }
+            if (bulkMenu && selected === 0) {
+                bulkMenu.classList.add('hidden');
             }
 
-            const $input = window.jQuery ? window.jQuery(searchInput) : null;
-            if ($input) {
-                $input.off('.DT');
-            }
-
-            let timer = null;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    const value = searchInput.value.trim();
-                    if (value) {
-                        params.set('search', value);
-                    } else {
-                        params.delete('search');
-                    }
-                    params.set('page', '1');
-                    window.location.search = params.toString();
-                }, 450);
+            selectedCounts.forEach((item) => {
+                item.textContent = selected;
             });
+            if (selectedCountText) {
+                selectedCountText.textContent = `${selected} user`;
+            }
+
+            if (selectAll) {
+                const allChecked = boxes.length > 0 && boxes.every((cb) => cb.checked);
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = selected > 0 && !allChecked;
+            }
         };
 
         if (selectAll) {
@@ -286,16 +302,27 @@
                 checkboxes().forEach((cb) => {
                     cb.checked = e.target.checked;
                 });
+                updateBulkState();
             });
         }
 
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('js-user-checkbox') && selectAll) {
-                const boxes = checkboxes();
-                const allChecked = boxes.length > 0 && boxes.every((cb) => cb.checked);
-                selectAll.checked = allChecked;
+                updateBulkState();
             }
         });
+
+        if (bulkButton && bulkMenu) {
+            bulkButton.addEventListener('click', () => {
+                bulkMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (event) => {
+                if (bulkWrap && !bulkWrap.contains(event.target)) {
+                    bulkMenu.classList.add('hidden');
+                }
+            });
+        }
 
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -312,7 +339,7 @@
             updateFields();
         }
 
-        bindServerSearch();
+        updateBulkState();
     });
 </script>
 @endsection

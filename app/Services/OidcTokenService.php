@@ -32,8 +32,8 @@ class OidcTokenService
         ]);
 
         $segments = [
-            $this->base64UrlEncode(json_encode($header)),
-            $this->base64UrlEncode(json_encode($claims)),
+            $this->base64UrlEncode(json_encode($header, JSON_THROW_ON_ERROR)),
+            $this->base64UrlEncode(json_encode($claims, JSON_THROW_ON_ERROR)),
         ];
 
         $signingInput = implode('.', $segments);
@@ -48,7 +48,9 @@ class OidcTokenService
         $privateKey = $this->getPrivateKey();
 
         $signature = '';
-        openssl_sign($payload, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+        if (! openssl_sign($payload, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+            throw new \RuntimeException('Unable to sign OIDC token.');
+        }
 
         return $this->base64UrlEncode($signature);
     }
@@ -57,16 +59,28 @@ class OidcTokenService
     {
         $configured = config('passport.private_key');
         if ($configured) {
-            return openssl_pkey_get_private($this->normalizeKey($configured));
+            $privateKey = openssl_pkey_get_private($this->normalizeKey($configured));
+
+            if (! $privateKey) {
+                throw new \RuntimeException('Configured Passport private key is invalid.');
+            }
+
+            return $privateKey;
         }
 
         $path = storage_path('oauth-private.key');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \RuntimeException('Passport private key not found. Run "php artisan passport:keys" or set PASSPORT_PRIVATE_KEY.');
         }
 
-        return openssl_pkey_get_private(file_get_contents($path));
+        $privateKey = openssl_pkey_get_private(file_get_contents($path));
+
+        if (! $privateKey) {
+            throw new \RuntimeException('Passport private key is invalid.');
+        }
+
+        return $privateKey;
     }
 
     protected function keyId(): ?string
@@ -78,7 +92,7 @@ class OidcTokenService
 
         $path = storage_path('oauth-public.key');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return null;
         }
 
