@@ -178,7 +178,7 @@
             @yield('content')
 
             <footer class="pt-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                Copyright {{ date('Y') }} Sabira Connect. Built by Ryand Arifriantoni (arryand7@gmail.com).
+                Copyright {{ date('Y') }} Sabira Connect. Built by IT SABIRA.
             </footer>
         </div>
     </main>
