@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Application;
-use Spatie\Permission\Models\Role;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class ApplicationSeeder extends Seeder
 {
@@ -61,9 +61,9 @@ class ApplicationSeeder extends Seeder
         foreach ($applications as $appData) {
             $roles = $appData['roles'];
             unset($appData['roles']);
-            
+
             $credentials = Application::generateCredentials();
-            
+
             $app = Application::firstOrCreate(
                 ['slug' => $appData['slug']],
                 array_merge($appData, $credentials, ['is_active' => true])

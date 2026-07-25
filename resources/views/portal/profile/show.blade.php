@@ -5,8 +5,8 @@
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <div class="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-8 text-white">
             <div class="flex items-center space-x-4">
-                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-4xl"></i>
+                <div class="w-24 h-18 bg-white/20 rounded-lg flex items-center justify-center overflow-hidden border border-white/30 flex-shrink-0">
+                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="w-full h-full object-contain">
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold">{{ $user->name }}</h1>

@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 use App\Models\User;
@@ -10,9 +11,9 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 $root = dirname(__DIR__);
-require $root . '/vendor/autoload.php';
+require $root.'/vendor/autoload.php';
 
-$app = require $root . '/bootstrap/app.php';
+$app = require $root.'/bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 
 $options = getopt('', [
@@ -24,21 +25,21 @@ $options = getopt('', [
 ]);
 
 $dataDir = '/var/www/sss.sabira-iibs.id/temp/import/DATA';
-$studentsPath = $options['students'] ?? ($dataDir . '/student_email.csv');
-$staffPath = $options['staff'] ?? ($dataDir . '/staff_email.csv');
-$staffInfoPath = $options['staff-info'] ?? ($dataDir . '/data_guru.xlsx');
+$studentsPath = $options['students'] ?? ($dataDir.'/student_email.csv');
+$staffPath = $options['staff'] ?? ($dataDir.'/staff_email.csv');
+$staffInfoPath = $options['staff-info'] ?? ($dataDir.'/data_guru.xlsx');
 
 $dryRun = array_key_exists('dry-run', $options);
 $updatePasswords = array_key_exists('update-passwords', $options);
 
-if (!file_exists($studentsPath) && !file_exists($staffPath)) {
+if (! file_exists($studentsPath) && ! file_exists($staffPath)) {
     fwrite(STDERR, "No input files found. Provide --students and/or --staff.\n");
     exit(1);
 }
 
 $roles = Role::whereIn('name', ['student', 'teacher', 'staff'])->get()->keyBy('name');
 foreach (['student', 'teacher', 'staff'] as $roleName) {
-    if (!isset($roles[$roleName])) {
+    if (! isset($roles[$roleName])) {
         fwrite(STDERR, "Missing role: {$roleName}. Run RoleSeeder first.\n");
         exit(1);
     }
@@ -86,6 +87,7 @@ function syncCsvUsers(
     $handle = fopen($path, 'r');
     if ($handle === false) {
         fwrite(STDERR, "Failed to open {$path}\n");
+
         return 0;
     }
 
@@ -94,16 +96,18 @@ function syncCsvUsers(
     while (($row = fgetcsv($handle, 0, ';')) !== false) {
         if ($header === null) {
             $header = buildHeaderMap($row);
+
             continue;
         }
 
-        if (count(array_filter($row, fn($val) => trim((string) $val) !== '')) === 0) {
+        if (count(array_filter($row, fn ($val) => trim((string) $val) !== '')) === 0) {
             continue;
         }
 
         $data = mapRowToUserData($row, $header, $defaultType, $staffTypeMap);
         if ($data === null) {
             $stats['skipped']++;
+
             continue;
         }
 
@@ -113,6 +117,7 @@ function syncCsvUsers(
     }
 
     fclose($handle);
+
     return $processed;
 }
 
@@ -125,6 +130,7 @@ function buildHeaderMap(array $row): array
             $map[$key] = $index;
         }
     }
+
     return $map;
 }
 
@@ -132,6 +138,7 @@ function normalizeHeader(string $value): string
 {
     $value = strtolower(trim($value));
     $value = preg_replace('/[^a-z0-9]+/', '', $value);
+
     return $value ?? '';
 }
 
@@ -142,6 +149,7 @@ function getHeaderIndex(array $header, array $candidates): ?int
             return $header[$candidate];
         }
     }
+
     return null;
 }
 
@@ -194,13 +202,14 @@ function resolveStaffType(string $jenisPegawai): string
     if (str_contains($value, 'guru') || str_contains($value, 'teacher') || str_contains($value, 'ustadz') || str_contains($value, 'ustad')) {
         return 'teacher';
     }
+
     return 'staff';
 }
 
 function upsertUser(array $data, bool $dryRun, bool $updatePasswords): string
 {
     $user = User::where('username', $data['username'])->first();
-    if (!$user && $data['email']) {
+    if (! $user && $data['email']) {
         $user = User::where('email', $data['email'])->first();
     }
 
@@ -213,7 +222,7 @@ function upsertUser(array $data, bool $dryRun, bool $updatePasswords): string
         'status' => 'active',
     ];
 
-    if (!$user) {
+    if (! $user) {
         $updates['password'] = Hash::make($data['password_raw']);
         $updates['email_verified_at'] = $data['email'] ? Carbon::now() : null;
         if ($dryRun) {
@@ -223,6 +232,7 @@ function upsertUser(array $data, bool $dryRun, bool $updatePasswords): string
             'username' => $data['username'],
         ]));
         $user->syncRoles([$data['type']]);
+
         return 'created';
     }
 
@@ -236,6 +246,7 @@ function upsertUser(array $data, bool $dryRun, bool $updatePasswords): string
 
     $user->update($updates);
     $user->syncRoles([$data['type']]);
+
     return 'updated';
 }
 
@@ -267,7 +278,7 @@ function buildStaffTypeMapFromXlsx(string $path): array
 
 function readXlsxRows(string $path): array
 {
-    $zip = new ZipArchive();
+    $zip = new ZipArchive;
     if ($zip->open($path) !== true) {
         return [];
     }
@@ -290,12 +301,14 @@ function readXlsxRows(string $path): array
     $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
     if ($sheetXml === false) {
         $zip->close();
+
         return [];
     }
 
     $sheet = simplexml_load_string($sheetXml);
     if ($sheet === false) {
         $zip->close();
+
         return [];
     }
 
@@ -331,6 +344,7 @@ function readXlsxRows(string $path): array
     }
 
     $zip->close();
+
     return $rows;
 }
 
@@ -350,5 +364,6 @@ function columnToIndex(string $ref): int
     for ($i = 0; $i < strlen($letters); $i++) {
         $index = $index * 26 + (ord($letters[$i]) - ord('A') + 1);
     }
+
     return $index - 1;
 }

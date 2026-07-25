@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\User;
+use App\Services\ApplicationAccessService;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
@@ -22,8 +24,8 @@ class ApplicationController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('base_url', 'like', "%{$search}%");
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('base_url', 'like', "%{$search}%");
             });
         }
 
@@ -46,6 +48,7 @@ class ApplicationController extends Controller
     public function create()
     {
         $roles = Role::all();
+
         return view('admin.applications.create', compact('roles'));
     }
 
@@ -91,34 +94,165 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Display the specified application.
+     * Display the specified application with user accesses & capabilities.
      */
-    public function show(Application $application)
+    public function show(Application $application, Request $request, ApplicationAccessService $accessService)
     {
         $application->load('roles');
-        
-        // Get users with access (first page)
-        $users = $application->getUsersWithAccess([], 10);
+
+        $filters = $request->only(['search', 'type', 'application_role', 'status', 'sync_status']);
+        $userAccesses = $accessService->getApplicationUsers($application, $filters, 15);
+        $allUsers = User::active()->orderBy('name')->get();
 
         return view('admin.applications.show', [
             'application' => $application,
-            'users' => $users,
+            'userAccesses' => $userAccesses,
+            'allUsers' => $allUsers,
+            'filters' => $filters,
         ]);
     }
 
     /**
      * Display users with access to this application.
      */
-    public function users(Request $request, Application $application)
+    public function users(Request $request, Application $application, ApplicationAccessService $accessService)
     {
-        $filters = $request->only(['search', 'type', 'status']);
-        $users = $application->getUsersWithAccess($filters, 15);
+        $filters = $request->only(['search', 'type', 'application_role', 'status', 'sync_status']);
+        $userAccesses = $accessService->getApplicationUsers($application, $filters, 20);
 
         return view('admin.applications.users', [
             'application' => $application,
-            'users' => $users,
+            'userAccesses' => $userAccesses,
             'filters' => $filters,
         ]);
+    }
+
+    /**
+     * Grant access to a user for this application.
+     */
+    public function grantUserAccess(Request $request, Application $application, ApplicationAccessService $accessService)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'application_role' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+        $accessService->grantAccess(
+            $user,
+            $application,
+            $validated['application_role'] ?? null,
+            $validated['status'],
+            auth()->id()
+        );
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', "Akses untuk {$user->name} berhasil diberikan.");
+    }
+
+    /**
+     * Bulk grant access to multiple users for this application.
+     */
+    public function bulkGrantUserAccess(Request $request, Application $application, ApplicationAccessService $accessService)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'application_role' => 'nullable|string|max:255',
+        ]);
+
+        $count = $accessService->bulkGrantAccess(
+            $validated['user_ids'],
+            $application,
+            $validated['application_role'] ?? null,
+            auth()->id()
+        );
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', "Akses berhasil diberikan kepada {$count} user.");
+    }
+
+    /**
+     * Update access role/status for a user on this application.
+     */
+    public function updateUserAccess(Request $request, Application $application, User $user, ApplicationAccessService $accessService)
+    {
+        $validated = $request->validate([
+            'application_role' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive,revoked',
+        ]);
+
+        $validated['updated_by'] = auth()->id();
+        $accessService->updateAccess($user, $application, $validated);
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', "Akses user {$user->name} berhasil diperbarui.");
+    }
+
+    /**
+     * Revoke access for a user on this application.
+     */
+    public function revokeUserAccess(Request $request, Application $application, User $user, ApplicationAccessService $accessService)
+    {
+        $accessService->revokeAccess($user, $application, auth()->id());
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', "Akses user {$user->name} berhasil dicabut.");
+    }
+
+    /**
+     * Bulk revoke access for multiple users on this application.
+     */
+    public function bulkRevokeUserAccess(Request $request, Application $application, ApplicationAccessService $accessService)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+        ]);
+
+        $count = $accessService->bulkRevokeAccess($validated['user_ids'], $application, auth()->id());
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', "Akses berhasil dicabut dari {$count} user.");
+    }
+
+    /**
+     * Update application sync capabilities & settings.
+     */
+    public function updateCapabilities(Request $request, Application $application)
+    {
+        $validated = $request->validate([
+            'sync_enabled' => 'boolean',
+            'api_rate_limit' => 'required|integer|min:1|max:1000',
+            'capabilities' => 'required|array',
+            'capabilities.create_user' => 'boolean',
+            'capabilities.update_user' => 'boolean',
+            'capabilities.suspend_user' => 'boolean',
+            'capabilities.reactivate_user' => 'boolean',
+            'capabilities.sync_photo' => 'boolean',
+            'capabilities.sync_qr' => 'boolean',
+            'capabilities.sync_role' => 'boolean',
+        ]);
+
+        $capabilities = [
+            'create_user' => $request->boolean('capabilities.create_user'),
+            'update_user' => $request->boolean('capabilities.update_user'),
+            'suspend_user' => $request->boolean('capabilities.suspend_user'),
+            'reactivate_user' => $request->boolean('capabilities.reactivate_user'),
+            'sync_photo' => $request->boolean('capabilities.sync_photo'),
+            'sync_qr' => $request->boolean('capabilities.sync_qr'),
+            'sync_role' => $request->boolean('capabilities.sync_role'),
+        ];
+
+        $application->update([
+            'sync_enabled' => $request->boolean('sync_enabled'),
+            'api_rate_limit' => $validated['api_rate_limit'],
+            'sync_capabilities' => $capabilities,
+        ]);
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('status', 'Konfigurasi sinkronisasi & capabilities aplikasi berhasil diperbarui.');
     }
 
     /**
@@ -127,6 +261,7 @@ class ApplicationController extends Controller
     public function edit(Application $application)
     {
         $roles = Role::all();
+
         return view('admin.applications.edit', compact('application', 'roles'));
     }
 
@@ -137,7 +272,7 @@ class ApplicationController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:applications,slug,' . $application->id . '|alpha_dash',
+            'slug' => 'required|string|max:255|unique:applications,slug,'.$application->id.'|alpha_dash',
             'base_url' => 'required|url|max:255',
             'redirect_uri' => 'required|string',
             'sso_login_url' => 'nullable|url|max:255',
@@ -198,12 +333,12 @@ class ApplicationController extends Controller
 
     protected function storeLogo(?UploadedFile $file, ?string $existingPath = null): ?string
     {
-        if (!$file) {
+        if (! $file) {
             return $existingPath;
         }
 
         $image = imagecreatefromstring(file_get_contents($file->getRealPath()));
-        if (!$image) {
+        if (! $image) {
             return $existingPath;
         }
 
@@ -229,7 +364,7 @@ class ApplicationController extends Controller
         imagedestroy($image);
         imagedestroy($canvas);
 
-        $filename = 'app-logos/' . Str::uuid() . '.png';
+        $filename = 'app-logos/'.Str::uuid().'.png';
         Storage::disk('public')->put($filename, $pngData);
 
         if ($existingPath && Storage::disk('public')->exists($existingPath)) {

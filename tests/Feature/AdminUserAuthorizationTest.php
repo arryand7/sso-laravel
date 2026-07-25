@@ -99,6 +99,49 @@ class AdminUserAuthorizationTest extends TestCase
         $this->assertTrue(User::where('username', 'second-root')->firstOrFail()->hasRole('superadmin'));
     }
 
+    public function test_superadmin_can_bulk_deactivate_and_delete_users(): void
+    {
+        $superadmin = $this->userWithRole('superadmin');
+        $user1 = User::factory()->create(['status' => 'active']);
+        $user2 = User::factory()->create(['status' => 'active']);
+
+        // Bulk deactivate
+        $response = $this->actingAs($superadmin)->post(route('admin.users.bulk-actions'), [
+            'action' => 'deactivate_selected',
+            'user_ids' => [$user1->id, $user2->id],
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $this->assertSame('suspended', $user1->fresh()->status);
+        $this->assertSame('suspended', $user2->fresh()->status);
+
+        // Bulk delete
+        $response = $this->actingAs($superadmin)->post(route('admin.users.bulk-actions'), [
+            'action' => 'delete_selected',
+            'user_ids' => [$user1->id, $user2->id],
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $this->assertDatabaseMissing('users', ['id' => $user1->id]);
+        $this->assertDatabaseMissing('users', ['id' => $user2->id]);
+    }
+
+    public function test_regular_admin_cannot_bulk_deactivate_or_delete_users(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $user1 = User::factory()->create(['status' => 'active']);
+
+        $this->actingAs($admin)->post(route('admin.users.bulk-actions'), [
+            'action' => 'deactivate_selected',
+            'user_ids' => [$user1->id],
+        ])->assertForbidden();
+
+        $this->actingAs($admin)->post(route('admin.users.bulk-actions'), [
+            'action' => 'delete_selected',
+            'user_ids' => [$user1->id],
+        ])->assertForbidden();
+    }
+
     private function userWithRole(string $roleName, array $attributes = []): User
     {
         $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);

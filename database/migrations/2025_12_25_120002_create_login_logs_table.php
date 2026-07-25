@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('login_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')
-                  ->constrained('users')
-                  ->onDelete('cascade');
+                ->constrained('users')
+                ->onDelete('cascade');
             $table->string('client_app')
-                  ->comment('portal, sss, laptop, lms, smart, dll');
+                ->comment('portal, sss, laptop, lms, smart, dll');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamp('login_at');
-            
+
             // Indexes untuk query log
             $table->index('client_app');
             $table->index('login_at');

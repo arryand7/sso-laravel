@@ -18,19 +18,19 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            
+
             // Custom fields untuk Sabira Connect
             $table->enum('type', ['student', 'teacher', 'parent', 'staff', 'admin'])
-                  ->default('student');
+                ->default('student');
             $table->string('nis')->nullable()->comment('Nomor Induk Siswa');
             $table->string('nip')->nullable()->comment('Nomor Induk Pegawai');
             $table->enum('status', ['active', 'suspended', 'pending'])
-                  ->default('active');
+                ->default('active');
             $table->timestamp('last_login_at')->nullable();
-            
+
             $table->rememberToken();
             $table->timestamps();
-            
+
             // Indexes
             $table->index('type');
             $table->index('status');

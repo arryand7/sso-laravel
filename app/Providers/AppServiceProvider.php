@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\RateLimiter;
-use App\Models\Setting;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,19 +36,20 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', function (Request $request) {
             $username = (string) $request->input('username', 'guest');
+
             return Limit::perMinute(10)->by(strtolower($username).'|'.$request->ip());
         });
 
         if (Schema::hasTable('settings')) {
             $timezone = Setting::getValue('app', 'timezone', config('app.timezone'));
-            if (!empty($timezone)) {
+            if (! empty($timezone)) {
                 config(['app.timezone' => $timezone]);
                 date_default_timezone_set($timezone);
             }
 
             $emailSettings = Setting::group('email');
 
-            if (!empty($emailSettings)) {
+            if (! empty($emailSettings)) {
                 $scheme = $this->normalizeMailScheme($emailSettings['scheme'] ?? config('mail.mailers.smtp.scheme'));
 
                 config([
@@ -65,7 +66,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $oauthSettings = Setting::group('oauth');
-            if (!empty($oauthSettings)) {
+            if (! empty($oauthSettings)) {
                 config([
                     'services.google.client_id' => $oauthSettings['google_client_id'] ?? config('services.google.client_id'),
                     'services.google.client_secret' => $oauthSettings['google_client_secret'] ?? config('services.google.client_secret'),
@@ -77,7 +78,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function normalizeMailScheme(?string $scheme): ?string
     {
-        if (!$scheme) {
+        if (! $scheme) {
             return null;
         }
 

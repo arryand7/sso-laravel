@@ -14,7 +14,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $applications = $user->accessibleApplications();
-        
+
         // Group applications by category
         $groupedApps = $applications->groupBy('category');
 

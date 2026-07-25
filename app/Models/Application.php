@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use App\Models\PassportClient;
 use Spatie\Permission\Models\Role;
 
 class Application extends Model
@@ -25,6 +24,9 @@ class Application extends Model
         'logo_path',
         'description',
         'is_active',
+        'sync_enabled',
+        'sync_capabilities',
+        'api_rate_limit',
     ];
 
     protected $hidden = [
@@ -35,24 +37,44 @@ class Application extends Model
     {
         return [
             'is_active' => 'boolean',
+            'sync_enabled' => 'boolean',
+            'sync_capabilities' => 'array',
+            'api_rate_limit' => 'integer',
         ];
     }
 
     public function getLogoUrlAttribute(): ?string
     {
-        if (!$this->logo_path) {
+        if (! $this->logo_path) {
             return null;
         }
 
-        return asset('storage/' . $this->logo_path);
+        return asset('storage/'.$this->logo_path);
     }
 
     // ========== Relationships ==========
 
+    public function userAccesses()
+    {
+        return $this->hasMany(UserApplicationAccess::class);
+    }
+
+    public function syncStatuses()
+    {
+        return $this->hasMany(ApplicationUserSyncStatus::class);
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_application_accesses')
+            ->withPivot(['application_role', 'status', 'granted_at', 'granted_by', 'revoked_at', 'revoked_by', 'last_synced_at'])
+            ->withTimestamps();
+    }
+
     public function roles()
     {
         return $this->belongsToMany(Role::class, 'application_role')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     public function passportClient()
@@ -66,7 +88,7 @@ class Application extends Model
     public function users()
     {
         $roleIds = $this->roles()->pluck('roles.id');
-        
+
         return User::whereHas('roles', function ($query) use ($roleIds) {
             $query->whereIn('roles.id', $roleIds);
         });
@@ -81,10 +103,10 @@ class Application extends Model
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('nis', 'like', "%{$search}%")
-                      ->orWhere('nip', 'like', "%{$search}%");
+                        ->orWhere('username', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%");
                 });
             })
             ->when($filters['type'] ?? null, function ($query, $type) {
@@ -149,6 +171,7 @@ class Application extends Model
     public function isValidRedirectUri(string $uri): bool
     {
         $allowedUris = array_map('trim', explode(',', $this->redirect_uri));
+
         return in_array($uri, $allowedUris);
     }
 
@@ -158,5 +181,43 @@ class Application extends Model
     public function getMaskedClientIdAttribute(): string
     {
         return Str::mask($this->client_id, '*', 8, -4);
+    }
+
+    /**
+     * Get effective sync capabilities array with defaults.
+     */
+    public function getEffectiveCapabilities(): array
+    {
+        $defaults = [
+            'sync_enabled' => (bool) $this->sync_enabled,
+            'create_user' => true,
+            'update_user' => true,
+            'suspend_user' => true,
+            'reactivate_user' => true,
+            'sync_photo' => true,
+            'sync_qr' => false,
+            'sync_role' => true,
+        ];
+
+        if (! is_array($this->sync_capabilities)) {
+            return $defaults;
+        }
+
+        return array_merge($defaults, $this->sync_capabilities);
+    }
+
+    public function supportsPhoto(): bool
+    {
+        return (bool) ($this->getEffectiveCapabilities()['sync_photo'] ?? true);
+    }
+
+    public function supportsQr(): bool
+    {
+        return (bool) ($this->getEffectiveCapabilities()['sync_qr'] ?? false);
+    }
+
+    public function supportsRole(): bool
+    {
+        return (bool) ($this->getEffectiveCapabilities()['sync_role'] ?? true);
     }
 }

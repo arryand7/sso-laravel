@@ -21,12 +21,12 @@ class SocialAuthController extends Controller
             return $this->redirectWithError('Provider belum tersedia.');
         }
 
-        if (!Schema::hasTable('settings') || !Setting::getBool('oauth', 'google_enabled')) {
+        if (! Schema::hasTable('settings') || ! Setting::getBool('oauth', 'google_enabled')) {
             return $this->redirectWithError('Google OAuth tidak aktif.');
         }
 
         $config = $this->getGoogleConfig();
-        if (!$config['client_id'] || !$config['client_secret'] || !$config['redirect']) {
+        if (! $config['client_id'] || ! $config['client_secret'] || ! $config['redirect']) {
             return $this->redirectWithError('Konfigurasi Google OAuth belum lengkap.');
         }
 
@@ -66,17 +66,17 @@ class SocialAuthController extends Controller
         $state = $request->input('state');
         $sessionState = $request->session()->pull('oauth_state');
 
-        if (!$state || !$sessionState || $state !== $sessionState) {
+        if (! $state || ! $sessionState || $state !== $sessionState) {
             return $this->redirectWithError('State OAuth tidak valid.');
         }
 
         $config = $this->getGoogleConfig();
-        if (!$config['client_id'] || !$config['client_secret'] || !$config['redirect']) {
+        if (! $config['client_id'] || ! $config['client_secret'] || ! $config['redirect']) {
             return $this->redirectWithError('Konfigurasi Google OAuth belum lengkap.');
         }
 
         $code = $request->input('code');
-        if (!$code) {
+        if (! $code) {
             return $this->redirectWithError('Kode otorisasi tidak ditemukan.');
         }
 
@@ -88,34 +88,34 @@ class SocialAuthController extends Controller
             'grant_type' => 'authorization_code',
         ]);
 
-        if (!$tokenResponse->ok()) {
+        if (! $tokenResponse->ok()) {
             return $this->redirectWithError('Gagal mendapatkan token Google. '.$tokenResponse->body());
         }
 
         $accessToken = $tokenResponse->json('access_token');
-        if (!$accessToken) {
+        if (! $accessToken) {
             return $this->redirectWithError('Access token tidak ditemukan.');
         }
 
         $userInfo = Http::withToken($accessToken)
             ->get('https://openidconnect.googleapis.com/v1/userinfo');
 
-        if (!$userInfo->ok()) {
+        if (! $userInfo->ok()) {
             return $this->redirectWithError('Gagal mengambil data profil Google.');
         }
 
         $email = $userInfo->json('email');
-        if (!$email) {
+        if (! $email) {
             return $this->redirectWithError('Email Google tidak tersedia.');
         }
 
         $allowedDomains = $this->parseDomains($config['allowed_domains']);
-        if (!$this->isAllowedDomain($email, $allowedDomains)) {
+        if (! $this->isAllowedDomain($email, $allowedDomains)) {
             return $this->redirectWithError('Domain email tidak diizinkan.');
         }
 
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             return $this->redirectWithError('Akun belum terdaftar. Hubungi admin.');
         }
 
@@ -141,7 +141,7 @@ class SocialAuthController extends Controller
 
     protected function getGoogleConfig(): array
     {
-        if (!Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             return [
                 'client_id' => config('services.google.client_id'),
                 'client_secret' => config('services.google.client_secret'),
@@ -160,12 +160,13 @@ class SocialAuthController extends Controller
 
     protected function parseDomains(?string $domains): array
     {
-        if (!$domains) {
+        if (! $domains) {
             return [];
         }
 
         return array_values(array_filter(array_map(function ($domain) {
             $domain = strtolower(trim($domain));
+
             return ltrim($domain, '@');
         }, explode(',', $domains))));
     }

@@ -14,7 +14,7 @@ class UserInfoController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'error' => 'invalid_token',
                 'error_description' => 'The access token is invalid.',

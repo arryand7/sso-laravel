@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('application_role', function (Blueprint $table) {
             $table->id();
             $table->foreignId('application_id')
-                  ->constrained('applications')
-                  ->onDelete('cascade');
+                ->constrained('applications')
+                ->onDelete('cascade');
             $table->foreignId('role_id')
-                  ->constrained('roles') // dari spatie/laravel-permission
-                  ->onDelete('cascade');
+                ->constrained('roles') // dari spatie/laravel-permission
+                ->onDelete('cascade');
             $table->timestamps();
-            
+
             // Unique constraint
             $table->unique(['application_id', 'role_id']);
         });

@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::get('/profile/password', [ProfileController::class, 'showChangePasswordForm'])
         ->name('profile.password');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])
@@ -94,16 +95,40 @@ Route::middleware(['auth', 'role:admin|superadmin'])
 
         // User Management
         Route::resource('users', UserController::class);
+        Route::delete('users/{user}/photo', [UserController::class, 'destroyPhoto'])
+            ->name('users.photo.destroy');
         Route::post('users/bulk-actions', [UserController::class, 'bulkUpdate'])
             ->name('users.bulk-actions');
         Route::get('users/{user}/reset-password', [UserController::class, 'showResetPassword'])
             ->name('users.reset-password');
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])
             ->name('users.reset-password.update');
+
+        // User Application Access Management
+        Route::post('users/{user}/applications', [UserController::class, 'grantApplicationAccess'])
+            ->name('users.applications.store');
+        Route::put('users/{user}/applications/{application}', [UserController::class, 'updateApplicationAccess'])
+            ->name('users.applications.update');
+        Route::delete('users/{user}/applications/{application}', [UserController::class, 'revokeApplicationAccess'])
+            ->name('users.applications.destroy');
+
+        // Import Routes
+        Route::get('users-import/template', [UserController::class, 'downloadImportTemplate'])
+            ->name('users.import.template');
         Route::get('users-import', [UserController::class, 'showImportForm'])
             ->name('users.import');
-        Route::post('users-import', [UserController::class, 'import'])
+        Route::post('users-import', [UserController::class, 'uploadImport'])
             ->name('users.import.store');
+        Route::get('users-import/{batch}', [UserController::class, 'showImportBatch'])
+            ->name('users.import.show');
+        Route::post('users-import/{batch}/validate', [UserController::class, 'validateImportBatch'])
+            ->name('users.import.validate');
+        Route::post('users-import/{batch}/commit', [UserController::class, 'commitImportBatch'])
+            ->name('users.import.commit');
+        Route::get('users-import/{batch}/report', [UserController::class, 'downloadImportReport'])
+            ->name('users.import.report');
+        Route::post('users-import/{batch}/cancel', [UserController::class, 'cancelImportBatch'])
+            ->name('users.import.cancel');
 
         // Application Management
         Route::resource('applications', ApplicationController::class);
@@ -111,6 +136,20 @@ Route::middleware(['auth', 'role:admin|superadmin'])
             ->name('applications.users');
         Route::post('applications/{application}/regenerate-secret', [ApplicationController::class, 'regenerateSecret'])
             ->name('applications.regenerate-secret');
+
+        // Application Access Management & Capabilities
+        Route::post('applications/{application}/users/grant', [ApplicationController::class, 'grantUserAccess'])
+            ->name('applications.users.grant');
+        Route::post('applications/{application}/users/bulk-grant', [ApplicationController::class, 'bulkGrantUserAccess'])
+            ->name('applications.users.bulk-grant');
+        Route::put('applications/{application}/users/{user}', [ApplicationController::class, 'updateUserAccess'])
+            ->name('applications.users.update');
+        Route::delete('applications/{application}/users/{user}', [ApplicationController::class, 'revokeUserAccess'])
+            ->name('applications.users.destroy');
+        Route::post('applications/{application}/users/bulk-revoke', [ApplicationController::class, 'bulkRevokeUserAccess'])
+            ->name('applications.users.bulk-revoke');
+        Route::put('applications/{application}/capabilities', [ApplicationController::class, 'updateCapabilities'])
+            ->name('applications.capabilities.update');
 
         // Role Management
         Route::middleware('role:superadmin')->group(function () {

@@ -1,189 +1,123 @@
 # Sabira Connect (Gate SSO)
 
-Sabira Connect adalah aplikasi Single Sign-On (SSO) untuk ekosistem sekolah. Aplikasi ini menyediakan portal login, manajemen user dan aplikasi, serta layanan OAuth2/OIDC untuk aplikasi pihak ketiga (LMS, absensi, laptop, dan lain-lain).
+Sabira Connect adalah pusat identitas utama dan Single Sign-On (SSO) untuk ekosistem sekolah Sabira. Aplikasi ini menyediakan portal login, manajemen user dan aplikasi, **Application Access Management**, **User Synchronization API (Pull-Based)**, serta layanan OAuth2/OpenID Connect (OIDC) untuk aplikasi pihak ketiga yang terhubung (Smart, Laptop, SSS, Moodle, Progress, Absensi, dll).
+
+---
 
 ## Fitur utama
 
-- SSO berbasis OAuth2 + OpenID Connect (id_token RS256, userinfo, well-known).
-- Portal pengguna untuk akses aplikasi sekolah.
-- Admin panel untuk CRUD user, aplikasi, mapping role, dan log login.
-- Sinkron otomatis aplikasi ke Passport client.
-- Server settings untuk OAuth services (Google, Facebook), outgoing mail, dan dokumentasi API.
-- Login Google (manual OAuth flow) dengan filter domain sekolah.
-- Rate limiting untuk endpoint /login dan /oauth/token.
-- Import user CSV/XLS/XLSX dan export log login CSV.
-- Secret OAuth/SMTP dienkripsi di database dan tidak ditampilkan ulang di UI.
+- **SSO Berbasis OAuth2 + OpenID Connect**: `id_token` RS256, userinfo, OIDC discovery, dan JWKS endpoint.
+- **Identitas Canonical & User UUID**: UUID v4 permanen (`gate_user_uuid`) sebagai identifier utama user lintas ekosistem aplikasi.
+- **Application Access Management**: Relasi *many-to-many* explicit antara user dan aplikasi, mendukung `application_role` spesifik per aplikasi, status akses (`active`, `inactive`, `revoked`), serta pencatatan audit `granted_by`, `granted_at`, `revoked_by`, `revoked_at`.
+- **Provisioning API & Pull-Based Synchronization**: API terisolasi berbasis kredensial aplikasi (`X-Client-Id` & `X-Client-Secret`) bagi aplikasi client untuk menarik data canonical user, signed photo temporary URL, dan melaporkan status sinkronisasi balik (`POST /api/provisioning/sync-results`).
+- **Engine Rekonsiliasi 8 Kategori**: Menyediakan alur *dry-run preview* dan perbandingan 8 kategori sinkronisasi (*Matched, Needs Update, Missing in Application, Access Revoked, Inactive in Gate, Local Only, Conflict, Reactivation Required*).
+- **Pengolahan Foto Profil & QR Code**: Foto diproses otomatis menjadi bingkai 4:3 tanpa crop/stretch dan dikompresi ≤ 300 KB. Setiap user dapat memiliki satu kode QR kartu anggota.
+- **Import & Export User Excel**: Template Excel 3-sheet resmi (`Users`, `Instructions`, `References`), validasi komprehensif sebelum penulisan DB, penanganan kolom `password` opsional, dan laporan error XLSX.
+- **Aksi Massal Admin**: Fitur *bulk actions* (Suspend, Nonaktifkan, Hapus Massal khusus Superadmin, Bulk Grant/Revoke Access).
+- **Portal & Admin Panel**: Admin panel Blade berbasis Tailwind CSS untuk CRUD user, aplikasi, role mapping, log login, dan server settings.
+- **Server Settings**: Pengaturan OAuth Google (dengan filter domain sekolah), SMTP email outgoing, dan dokumentasi API.
 
-## Flow aplikasi
+---
 
-### 1) Login portal (session)
+## Flow Aplikasi
+
+### 1) Login Portal (Session)
 1. User membuka `/login`.
 2. Submit form ke `POST /login` (rate limit `login`).
 3. Auth sukses -> update `last_login_at` + simpan `login_logs`.
-4. Redirect ke `/dashboard` dan tampilkan aplikasi sesuai role.
+4. Redirect ke `/dashboard` dan tampilkan daftar aplikasi yang berhak diakses.
 
-### 2) OAuth2/OIDC (SSO untuk aplikasi)
+### 2) OAuth2 / OIDC (SSO untuk Aplikasi Client)
 1. Aplikasi pihak ketiga redirect ke `/oauth/authorize` dengan `client_id`, `redirect_uri`, `scope`, `state`, `response_type=code`.
 2. `AuthorizeController` memvalidasi client dan redirect URI, lalu meneruskan ke Passport.
-3. Aplikasi menukar code ke `POST /oauth/token`.
-4. `TokenController` mengembalikan `access_token`, `refresh_token`, dan `id_token` (OIDC).
+3. Aplikasi menukar authorization code ke `POST /oauth/token`.
+4. Passport mengembalikan `access_token`, `refresh_token`, dan `id_token` (OIDC).
 5. Aplikasi dapat memanggil `/oauth/userinfo` untuk mengambil klaim user.
 
-### 3) Google OAuth (opsional)
-1. User klik "Login dengan Google" pada halaman login.
-2. `GET /auth/google` redirect ke Google OAuth.
-3. Callback ke `/auth/google/callback`.
-4. Domain email divalidasi sesuai setting admin.
-5. User lokal ditemukan, session login dibuat, lalu redirect ke dashboard.
+### 3) Application Access Management (Admin Gate)
+1. Admin membuka detail user (`/admin/users/{user}`) atau detail aplikasi (`/admin/applications/{application}`).
+2. Admin memberikan akses ke aplikasi, menentukan `application_role` (opsional), dan mengaktifkan akses.
+3. Hak akses langsung tersimpan di tabel `user_application_accesses` dengan riwayat `granted_by` / `granted_at`.
+4. Jika akses dicabut, status diubah menjadi `revoked` tanpa menghapus data historis user.
 
-### 4) Admin flow
-- `/admin` untuk dashboard admin.
-- CRUD user, aplikasi, role mapping, login log.
-- `/admin/server` untuk pengaturan OAuth, SMTP, dan Web Services (superadmin saja).
+### 4) Pull-Based Synchronization (Aplikasi Client)
+1. Superadmin aplikasi client (misal Smart/Laptop) menekan **"Sync Users from Gate"**.
+2. Aplikasi client memanggil `GET /api/provisioning/users` menggunakan `X-Client-Id` & `X-Client-Secret`.
+3. Aplikasi client membandingkan data Gate dengan data lokal dalam alur *dry-run preview* (8 kategori).
+4. Superadmin meninjau laporan perbandingan dan mengonfirmasi **"Apply Synchronization"**.
+5. Aplikasi client memperbarui DB lokal (create/update/suspend/reactivate).
+6. Aplikasi client mengirimkan hasil ke `POST /api/provisioning/sync-results` untuk memperbarui status sync di Gate.
 
-## Endpoint penting
+---
+
+## Endpoint Penting
 
 | Endpoint | Keterangan | Auth |
-| --- | --- | --- |
-| `/login` | Form login | Guest |
-| `/dashboard` | Portal user | Session |
-| `/admin` | Admin panel | Session + role admin |
-| `/.well-known/openid-configuration` | OIDC discovery | Public |
-| `/.well-known/jwks.json` | JWKS | Public |
+| :--- | :--- | :--- |
+| `/login` | Form login portal | Guest |
+| `/dashboard` | Portal user SSO | Session |
+| `/admin` | Admin panel Gate SSO | Session + role admin |
+| `/.well-known/openid-configuration` | OIDC discovery metadata | Public |
+| `/.well-known/jwks.json` | JSON Web Key Set | Public |
 | `/oauth/authorize` | Authorization endpoint | Session |
-| `/oauth/token` | Token endpoint | Public (rate limited) |
-| `/oauth/userinfo` | Userinfo | Bearer token |
-| `/auth/google` | Google OAuth redirect | Guest |
-| `/auth/google/callback` | Google OAuth callback | Guest |
+| `/oauth/token` | Token exchange endpoint | Public (rate limited) |
+| `/oauth/userinfo` | OIDC UserInfo endpoint | Bearer Token |
+| `/api/provisioning/me` | Status & capabilities aplikasi client | App Credential (`X-Client-Id`/`Secret`) |
+| `/api/provisioning/users` | Daftar canonical active users | App Credential (`X-Client-Id`/`Secret`) |
+| `/api/provisioning/users/{uuid}` | Detail 1 canonical user | App Credential (`X-Client-Id`/`Secret`) |
+| `/api/provisioning/changes` | User berubah sejak `?since=...` | App Credential (`X-Client-Id`/`Secret`) |
+| `/api/provisioning/photo/{user}` | Download foto profil sementara | Temporary Signed URL |
+| `/api/provisioning/sync-results` | Pelaporan hasil sinkronisasi client | App Credential (`X-Client-Id`/`Secret`) |
 
-## Struktur kode
+---
 
-- `app/Http/Controllers/Auth`  
-  Login, logout, password reset, dan social auth.
-- `app/Http/Controllers/Portal`  
-  Dashboard dan profile user.
-- `app/Http/Controllers/Admin`  
-  User, aplikasi, role, login log, dan server settings.
-- `app/Http/Controllers/OAuth`  
-  Authorize, token, userinfo, well-known.
-- `app/Models`  
-  `User`, `Application`, `LoginLog`, `Setting`, dan `PassportClient`.
-- `app/Services/OidcTokenService`  
-  Penerbitan id_token RS256.
-- `routes/web.php`  
-  Semua route web + OAuth endpoints.
-- `resources/views`  
-  Blade templates untuk portal, admin, dan auth pages.
+## Data Model Ringkas
 
-## Data model ringkas
+- `users`: `uuid` (UUID v4), `username`, `email`, `type` (*student/teacher/parent/staff/admin*), `nis`, `nip`, `status` (*active/suspended/pending*), `photo_path`, `qr_code`, `last_login_at`.
+- `applications`: `name`, `slug`, `client_id`, `client_secret`, `base_url`, `redirect_uri`, `sso_login_url`, `is_active`, `sync_enabled`, `sync_capabilities` (JSON), `api_rate_limit`.
+- `user_application_accesses`: `user_id`, `application_id`, `application_role`, `status` (*active/inactive/revoked*), `granted_at`, `granted_by`, `revoked_at`, `revoked_by`, `last_synced_at`.
+- `application_user_sync_statuses`: `user_id`, `application_id`, `status` (*never_synced/matched/needs_update/missing_in_application/suspended/conflict/failed*), `external_user_id`, `last_sync_at`, `last_reported_at`, `error_code`, `error_message`, `local_checksum`, `gate_checksum`.
+- `roles`, `model_has_roles`, `role_has_permissions`: Spatie permissions.
+- `login_logs`: Audit log login user.
+- `settings`: Konfigurasi terenkripsi (OAuth Google, SMTP).
 
-- `users`  
-  Field penting: `username`, `email`, `type`, `nis`, `nip`, `status`, `last_login_at`.
-- `roles`, `model_has_roles`, `role_has_permissions`  
-  Spatie permission untuk role access.
-- `applications`  
-  Data aplikasi + OAuth client.
-- `application_role`  
-  Mapping role ke aplikasi.
-- `login_logs`  
-  Audit login user.
-- `settings`  
-  Konfigurasi server (OAuth, email, web).
-- `oauth_*`  
-  Tabel Passport untuk token dan client.
+---
 
-## Style dan UI
-
-- Framework UI: Tailwind CSS via CDN.
-- Font utama: Inter (Google Fonts).
-- Icon: Material Symbols Outlined.
-- Token warna ada di layout:
-  - `primary`, `primary-hover`
-  - `background-light`, `background-dark`
-  - `surface-light`, `surface-dark`
-  - `border-light`, `border-dark`
-- Layouts:
-  - `resources/views/layouts/guest.blade.php` untuk login dan auth.
-  - `resources/views/layouts/app.blade.php` untuk portal user.
-  - `resources/views/layouts/admin.blade.php` untuk admin panel.
-- Dark mode: menggunakan class `dark` pada `<html>`. Default `light`.
-
-## Setup dan running
+## Setup dan Running
 
 ### Prasyarat
 - PHP 8.3+ (disarankan PHP 8.4)
-- Composer
+- Composer & Node.js
 - SQLite atau MySQL
 
-### Langkah cepat
+### Langkah Cepat
 ```bash
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 php artisan passport:install
+php artisan storage:link
 npm install
 npm run build
 php artisan serve
 ```
 
-Catatan:
-- Untuk OIDC token, pastikan `passport:install` atau `passport:keys` sudah dijalankan. Production dapat memakai `PASSPORT_PRIVATE_KEY` dan `PASSPORT_PUBLIC_KEY` di `.env`.
-- DB default menggunakan SQLite, sesuaikan `.env` jika menggunakan MySQL.
-- Jalankan `php artisan storage:link` jika menggunakan upload logo aplikasi.
+### Jalankan Testing & Code Style
+```bash
+# Menjalankan PHPUnit & Pint Formatter
+vendor/bin/pint && ./vendor/bin/phpunit -d memory_limit=512M
+```
 
-### Checklist production
-- Set `APP_ENV=production`, `APP_DEBUG=false`, dan `APP_URL` ke domain publik SSO.
-- Gunakan HTTPS dan set `SESSION_SECURE_COOKIE=true`.
-- Jalankan `php artisan migrate --force` untuk menerapkan migration, termasuk enkripsi secret lama.
-- Jalankan `composer install --no-dev --optimize-autoloader`, `npm ci`, `npm run build`, lalu `php artisan optimize`.
-- Ganti password akun seed default sebelum membuka akses ke jaringan sekolah.
+---
 
-## Sinkronisasi user
+## Dokumentasi Tambahan
 
-Script dan panduan sinkronisasi user tersedia di `SYNC.md`.
+- **Ketentuan Integrasi Aplikasi Client**: [`SYNC-APP-CLIENT.md`](file:///Users/ryand/Documents/LARAVEL/sabira/gate-sso/SYNC-APP-CLIENT.md) — Panduan lengkap ketentuan & langkah pengembangan bagi pengembang aplikasi client (Smart, Laptop, SSS, Moodle) agar dapat menggunakan fitur sinkronisasi ini.
+- **Panduan Teknis API Provisioning**: [connector_integration_guide.md](file:///Users/ryand/.gemini/antigravity-ide/brain/ceb48790-fc07-4194-96a4-c1738b04dbc2/connector_integration_guide.md)
+- **Dokumentasi Walkthrough**: [walkthrough.md](file:///Users/ryand/.gemini/antigravity-ide/brain/ceb48790-fc07-4194-96a4-c1738b04dbc2/walkthrough.md)
 
-- SSS -> Gate: `scripts/sync_users.php`
-- Gate -> LMS: `scripts/sync_gate_to_lms.php`
-- Contoh cron harian ada di `ops/cron.d/gate-sync`
+---
 
-## Akun default hasil seed
+## Lisensi & Kredit
 
-- Superadmin  
-  `username: superadmin`  
-  `password: password`
-- Admin  
-  `username: admin`  
-  `password: password`
-- Demo user  
-  `teacher001`, `student001`, `parent001`, `staff001` (password: `password`)
-
-## Konfigurasi OAuth Google
-
-1. Buka `Admin > Server`.
-2. Aktifkan Google OAuth dan isi:
-   - Client ID
-   - Client Secret
-   - Redirect URI (`/auth/google/callback`)
-   - Allowed domains (contoh: `sabira-iibs.id`, bisa lebih dari satu, pisahkan koma)
-3. User login dengan Google akan ditolak jika domain tidak sesuai.
-
-## Konfigurasi Email Outgoing
-
-1. Buka `Admin > Server`.
-2. Isi SMTP host, port, username, password.
-3. Scheme gunakan `smtp` atau `smtps` (untuk SSL).
-4. Gunakan fitur "Test Send" untuk verifikasi.
-
-## Catatan pengembangan
-
-- `Application::syncPassportClient()` memastikan data aplikasi selalu sinkron dengan tabel Passport.
-- `TokenController` menambah `id_token` untuk kebutuhan OIDC.
-- Rate limiting sudah disiapkan di `AppServiceProvider`.
-
-## Lisensi
-
-Internal project untuk ekosistem sekolah Sabira.
-
-## Kredit
-
-Sabira Connect dibuat oleh Ryand Arifriantoni (arryand7@gmail.com).
+Internal project untuk ekosistem sekolah Sabira. Dibuat oleh **Ryand Arifriantoni** (`arryand7@gmail.com`).

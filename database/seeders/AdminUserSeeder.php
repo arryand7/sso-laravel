@@ -76,7 +76,7 @@ class AdminUserSeeder extends Seeder
         foreach ($demoUsers as $userData) {
             $role = $userData['role'];
             unset($userData['role']);
-            
+
             $user = User::firstOrCreate(
                 ['username' => $userData['username']],
                 array_merge($userData, [

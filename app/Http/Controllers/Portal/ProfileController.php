@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserPhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -32,19 +33,36 @@ class ProfileController extends Controller
     /**
      * Update the user's profile.
      */
-    public function update(Request $request)
+    public function update(Request $request, UserPhotoService $photoService)
     {
         $user = $request->user();
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'nullable|email|max:255|unique:users,email,'.$user->id,
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
+        if ($request->hasFile('photo')) {
+            $photoService->store($user, $request->file('photo'));
+        }
+
+        unset($validated['photo']);
         $user->update($validated);
 
         return redirect()->route('profile.show')
             ->with('status', 'Profil berhasil diperbarui.');
+    }
+
+    /**
+     * Remove the profile photo.
+     */
+    public function destroyPhoto(Request $request, UserPhotoService $photoService)
+    {
+        $photoService->destroy($request->user());
+
+        return redirect()->route('profile.edit')
+            ->with('status', 'Foto profil berhasil dihapus.');
     }
 
     /**

@@ -20,13 +20,13 @@ return new class extends Migration
             $table->string('client_secret');
             $table->text('redirect_uri');
             $table->string('category')->nullable()
-                  ->comment('Akademik, LMS, Sarana, Keuangan, dll');
+                ->comment('Akademik, LMS, Sarana, Keuangan, dll');
             $table->string('icon')->nullable()
-                  ->comment('Icon class atau path');
+                ->comment('Icon class atau path');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             // Indexes
             $table->index('category');
             $table->index('is_active');

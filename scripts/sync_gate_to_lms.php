@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
 $options = getopt('', [
@@ -12,7 +13,7 @@ $dryRun = array_key_exists('dry-run', $options);
 $limit = isset($options['limit']) ? (int) $options['limit'] : null;
 $updateLastname = array_key_exists('update-lastname', $options);
 
-$gateEnv = parseEnvFile(__DIR__ . '/../.env');
+$gateEnv = parseEnvFile(__DIR__.'/../.env');
 $gateDb = [
     'host' => $gateEnv['DB_HOST'] ?? '127.0.0.1',
     'port' => $gateEnv['DB_PORT'] ?? '3306',
@@ -35,11 +36,11 @@ $gatePdo = pdoConnect($gateDb);
 $lmsPdo = pdoConnect($lmsDb);
 
 $prefix = $lmsDb['prefix'];
-$userTable = $prefix . 'user';
+$userTable = $prefix.'user';
 
 $gateSql = 'SELECT username, name, email, status FROM users WHERE email IS NOT NULL AND email <> \'\'';
 if ($limit !== null && $limit > 0) {
-    $gateSql .= ' LIMIT ' . (int) $limit;
+    $gateSql .= ' LIMIT '.(int) $limit;
 }
 
 $gateUsers = $gatePdo->query($gateSql)->fetchAll(PDO::FETCH_ASSOC);
@@ -88,6 +89,7 @@ foreach ($gateUsers as $gateUser) {
 
     if (isset($duplicateFirstnames[$username])) {
         $stats['skipped_duplicate_firstname']++;
+
         continue;
     }
 
@@ -100,11 +102,13 @@ foreach ($gateUsers as $gateUser) {
         $emailOwner = $findByEmail->fetch(PDO::FETCH_ASSOC);
         if ($emailOwner && (int) $emailOwner['id'] !== (int) $match['id']) {
             $stats['skipped_email_conflict']++;
+
             continue;
         }
 
         if ($dryRun) {
             $stats['updated']++;
+
             continue;
         }
 
@@ -115,12 +119,14 @@ foreach ($gateUsers as $gateUser) {
             $updateUser->execute([$email, $now, $match['id']]);
         }
         $stats['updated']++;
+
         continue;
     }
 
     $findByEmail->execute([$email]);
     if ($findByEmail->fetch(PDO::FETCH_ASSOC)) {
         $stats['skipped_existing_email']++;
+
         continue;
     }
 
@@ -128,6 +134,7 @@ foreach ($gateUsers as $gateUser) {
     $findByUsername->execute([$newUsername]);
     if ($findByUsername->fetch(PDO::FETCH_ASSOC)) {
         $stats['skipped_existing_username']++;
+
         continue;
     }
 
@@ -136,6 +143,7 @@ foreach ($gateUsers as $gateUser) {
 
     if ($dryRun) {
         $stats['inserted']++;
+
         continue;
     }
 
@@ -163,6 +171,7 @@ if ($dryRun) {
 function pdoConnect(array $db): PDO
 {
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $db['host'], $db['port'], $db['name']);
+
     return new PDO($dsn, $db['user'], $db['pass'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -171,23 +180,24 @@ function pdoConnect(array $db): PDO
 
 function parseEnvFile(string $path): array
 {
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         return [];
     }
     $data = [];
     foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        if ($line === '' || str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+        if ($line === '' || str_starts_with(trim($line), '#') || ! str_contains($line, '=')) {
             continue;
         }
         [$key, $value] = explode('=', $line, 2);
         $data[trim($key)] = trim($value, " \t\n\r\0\x0B\"");
     }
+
     return $data;
 }
 
 function parseMoodleConfig(string $path): array
 {
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         return [];
     }
     $contents = file_get_contents($path);
@@ -197,10 +207,11 @@ function parseMoodleConfig(string $path): array
     $keys = ['dbtype', 'dbhost', 'dbname', 'dbuser', 'dbpass', 'dbport', 'prefix'];
     $data = [];
     foreach ($keys as $key) {
-        $pattern = '/\\$CFG->' . preg_quote($key, '/') . '\\s*=\\s*\\\'([^\\\']*)\\\'\\s*;/';
+        $pattern = '/\\$CFG->'.preg_quote($key, '/').'\\s*=\\s*\\\'([^\\\']*)\\\'\\s*;/';
         if (preg_match($pattern, $contents, $matches)) {
             $data[$key] = $matches[1];
         }
     }
+
     return $data;
 }
