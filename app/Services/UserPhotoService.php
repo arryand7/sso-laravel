@@ -47,15 +47,24 @@ class UserPhotoService
     }
 
     /**
-     * Process and store a profile photo for a user.
+     * Process and store a profile photo for a user from an UploadedFile instance.
      *
      * Returns the storage path on success, null on failure.
      */
     public function store(User $user, UploadedFile $file): string
     {
         $this->validateUpload($file);
+        $encoded = $this->processPath($file->getPathname());
 
-        $image = $this->readImage($file);
+        return $this->storeEncoded($user, $encoded);
+    }
+
+    /**
+     * Process an image file from a local path into a 4:3 WebP/JPEG encoded string.
+     */
+    public function processPath(string $pathname): string
+    {
+        $image = $this->readImageFromPath($pathname);
         $image = $this->fixOrientation($image);
         $this->guardDecompressionBomb($image);
 
@@ -66,10 +75,15 @@ class UserPhotoService
         $result = $this->containOnCanvas($image);
 
         // Adaptive compression
-        $encoded = $this->adaptiveCompress($result);
+        return $this->adaptiveCompress($result);
+    }
 
-        // Store to disk
-        $path = $this->storeToDisk($user, $encoded);
+    /**
+     * Store pre-processed encoded image data to disk for a user.
+     */
+    public function storeEncoded(User $user, string $encodedData): string
+    {
+        $path = $this->storeToDisk($user, $encodedData);
 
         // Update database
         $oldPath = $user->photo_path;
@@ -123,8 +137,16 @@ class UserPhotoService
      */
     protected function readImage(UploadedFile $file): ImageInterface
     {
+        return $this->readImageFromPath($file->getPathname());
+    }
+
+    /**
+     * Read an image file path into an Intervention Image instance.
+     */
+    public function readImageFromPath(string $pathname): ImageInterface
+    {
         try {
-            return $this->manager->read($file->getPathname());
+            return $this->manager->read($pathname);
         } catch (\Exception $e) {
             throw new \InvalidArgumentException('Gagal membaca file gambar: '.$e->getMessage());
         }

@@ -3,6 +3,28 @@
 @section('page-title', 'Manajemen User')
 
 @section('content')
+@if (isset($activePhotoImportBatch) && $activePhotoImportBatch)
+    <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-purple-900">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-purple-600 text-[24px] {{ $activePhotoImportBatch->status === 'importing' ? 'animate-spin' : '' }}">sync</span>
+            <div>
+                <div class="font-bold text-sm">
+                    Batch Import Foto User #{{ $activePhotoImportBatch->id }} — {{ $activePhotoImportBatch->status_label }}
+                </div>
+                <div class="text-xs text-purple-700 mt-0.5">
+                    File: <strong>{{ $activePhotoImportBatch->original_filename }}</strong> | 
+                    Progress: <strong>{{ $activePhotoImportBatch->processed_count }} / {{ $activePhotoImportBatch->ready_new_count + $activePhotoImportBatch->ready_replace_count }} foto diproses</strong>
+                </div>
+            </div>
+        </div>
+        <a href="{{ route('admin.users.photo-import.show', $activePhotoImportBatch) }}" 
+           class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-lg transition-colors flex-shrink-0">
+            <span class="material-symbols-outlined text-[18px]">visibility</span>
+            Lihat Progress & Detail Batch
+        </a>
+    </div>
+@endif
+
 <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
     <div>
         <h2 class="text-2xl font-bold text-gray-900">Daftar User</h2>
@@ -68,7 +90,10 @@
             <span class="material-symbols-outlined text-[20px]">download</span> Download Template
         </a>
         <a href="{{ route('admin.users.import') }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">upload_file</span> Import
+            <span class="material-symbols-outlined text-[20px]">upload_file</span> Import Excel
+        </a>
+        <a href="{{ route('admin.users.photo-import.index') }}" class="px-4 py-2 border border-purple-200 text-purple-700 bg-purple-50/50 rounded-lg hover:bg-purple-100/60 flex items-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-[20px]">folder_zip</span> Import Foto ZIP
         </a>
         <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
             <span class="material-symbols-outlined text-[20px]">add</span> Tambah User

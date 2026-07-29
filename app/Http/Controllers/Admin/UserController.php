@@ -70,6 +70,9 @@ class UserController extends Controller
 
         $users = $query->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
         $roles = $this->roleOptionsForCurrentUser();
+        $activePhotoImportBatch = \App\Models\UserPhotoImportBatch::whereIn('status', ['inspecting', 'preview_ready', 'importing'])
+            ->latest()
+            ->first();
 
         return view('admin.users.index', [
             'users' => $users,
@@ -77,6 +80,7 @@ class UserController extends Controller
             'sort' => $sort,
             'direction' => $direction,
             'perPage' => $perPage,
+            'activePhotoImportBatch' => $activePhotoImportBatch,
         ]);
     }
 

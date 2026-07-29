@@ -93,6 +93,22 @@ Route::middleware(['auth', 'role:admin|superadmin'])
         // Dashboard Admin
         Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
+        // Bulk Photo ZIP Import Routes (Must come BEFORE users resource route to prevent wildcard matching)
+        Route::get('users/photo-import', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'index'])
+            ->name('users.photo-import.index');
+        Route::post('users/photo-import', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'store'])
+            ->name('users.photo-import.store');
+        Route::get('users/photo-import/{batch}', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'show'])
+            ->name('users.photo-import.show');
+        Route::post('users/photo-import/{batch}/confirm', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'confirm'])
+            ->name('users.photo-import.confirm');
+        Route::post('users/photo-import/{batch}/cancel', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'cancel'])
+            ->name('users.photo-import.cancel');
+        Route::get('users/photo-import/{batch}/progress', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'progress'])
+            ->name('users.photo-import.progress');
+        Route::get('users/photo-import/{batch}/report', [\App\Http\Controllers\Admin\UserPhotoImportController::class, 'downloadReport'])
+            ->name('users.photo-import.report');
+
         // User Management
         Route::resource('users', UserController::class);
         Route::delete('users/{user}/photo', [UserController::class, 'destroyPhoto'])
@@ -112,7 +128,7 @@ Route::middleware(['auth', 'role:admin|superadmin'])
         Route::delete('users/{user}/applications/{application}', [UserController::class, 'revokeApplicationAccess'])
             ->name('users.applications.destroy');
 
-        // Import Routes
+        // Excel Import Routes
         Route::get('users-import/template', [UserController::class, 'downloadImportTemplate'])
             ->name('users.import.template');
         Route::get('users-import', [UserController::class, 'showImportForm'])

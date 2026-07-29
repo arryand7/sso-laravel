@@ -24,5 +24,21 @@ class RoleSeeder extends Seeder
         foreach ($roles as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
+
+        $permissions = [
+            'users.bulk-import-photos',
+            'users.bulk-import-photos.preview',
+            'users.bulk-import-photos.apply',
+            'users.bulk-import-photos.download-report',
+        ];
+
+        foreach ($permissions as $permission) {
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
+
+        $superadmin = Role::where('name', 'superadmin')->first();
+        if ($superadmin) {
+            $superadmin->givePermissionTo($permissions);
+        }
     }
 }
