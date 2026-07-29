@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Support\UserPhotoImportPermissions;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
@@ -25,18 +27,13 @@ class RoleSeeder extends Seeder
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
 
-        $permissions = [
-            'users.bulk-import-photos',
-            'users.bulk-import-photos.preview',
-            'users.bulk-import-photos.apply',
-            'users.bulk-import-photos.download-report',
-        ];
+        $permissions = UserPhotoImportPermissions::names();
 
         foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => UserPhotoImportPermissions::GUARD]);
         }
 
-        $superadmin = Role::where('name', 'superadmin')->first();
+        $superadmin = Role::where('name', UserPhotoImportPermissions::ROLE)->first();
         if ($superadmin) {
             $superadmin->givePermissionTo($permissions);
         }

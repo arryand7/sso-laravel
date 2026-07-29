@@ -370,4 +370,35 @@ class UserPhotoImportTest extends TestCase
 
         @unlink($img);
     }
+
+    public function test_completed_item_is_not_processed_twice(): void
+    {
+        $student = User::factory()->create([
+            'type' => 'student',
+            'nis' => '22001002',
+            'photo_path' => null,
+        ]);
+        $img = $this->createDummyImage('jpg', 1200, 900);
+        $zip = $this->createZipWithFiles(['22001002.jpg' => $img]);
+
+        $this->actingAs($this->superadmin)->post(route('admin.users.photo-import.store'), [
+            'matching_type' => 'nis',
+            'existing_photo_policy' => 'skip',
+            'file' => $zip,
+        ]);
+
+        $item = UserPhotoImportItem::latest('id')->firstOrFail();
+        $service = app(UserPhotoImportService::class);
+
+        $this->assertTrue($service->processItem($item));
+        $firstPath = $student->fresh()->photo_path;
+        $firstProcessedAt = $item->fresh()->processed_at;
+
+        $this->assertTrue($service->processItem($item));
+        $this->assertSame($firstPath, $student->fresh()->photo_path);
+        $this->assertTrue($firstProcessedAt->equalTo($item->fresh()->processed_at));
+        $this->assertCount(1, Storage::disk('public')->allFiles('users/'.$student->id));
+
+        @unlink($img);
+    }
 }

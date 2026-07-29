@@ -37,6 +37,10 @@ return [
     // Batch chunk processing size
     'chunk_size' => 50,
 
+    // Dedicated queue and worker/job execution policy
+    'queue' => env('USER_PHOTO_IMPORT_QUEUE', 'user-photo-imports'),
+    'job_timeout' => \App\Jobs\ProcessUserPhotoImportBatch::TIMEOUT,
+
     // Retention duration in hours before uncommitted or temporary batches expire
     'cleanup_expiration_hours' => 24,
 ];

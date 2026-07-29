@@ -123,6 +123,12 @@ class UserPhotoImportService
      */
     public function processItem(UserPhotoImportItem $item): bool
     {
+        $item->refresh();
+
+        if ($item->status === 'COMPLETED') {
+            return true;
+        }
+
         if (! $item->isImportable()) {
             return false;
         }
@@ -141,16 +147,27 @@ class UserPhotoImportService
         }
 
         try {
-            DB::transaction(function () use ($item, $fullTempPath) {
+            return DB::transaction(function () use ($item, $fullTempPath): bool {
+                /** @var UserPhotoImportItem $lockedItem */
+                $lockedItem = UserPhotoImportItem::query()->lockForUpdate()->findOrFail($item->getKey());
+
+                if ($lockedItem->status === 'COMPLETED') {
+                    return true;
+                }
+
+                if (! $lockedItem->isImportable()) {
+                    return false;
+                }
+
                 /** @var User|null $user */
-                $user = User::lockForUpdate()->find($item->user_id);
+                $user = User::lockForUpdate()->find($lockedItem->user_id);
                 if (! $user) {
                     throw new \RuntimeException('User tidak ditemukan saat pemrosesan.');
                 }
 
                 // Verify exact identifier still matches
-                $currentIdentifier = $item->identifier_type === 'nis' ? $user->nis : $user->nip;
-                if ((string) $currentIdentifier !== (string) $item->identifier) {
+                $currentIdentifier = $lockedItem->identifier_type === 'nis' ? $user->nis : $user->nip;
+                if ((string) $currentIdentifier !== (string) $lockedItem->identifier) {
                     throw new \RuntimeException('NIS/NIP user telah berubah.');
                 }
 
@@ -161,7 +178,7 @@ class UserPhotoImportService
                 $newPhotoPath = $this->photoService->storeEncoded($user, $encodedData);
 
                 // Update item status
-                $item->update([
+                $lockedItem->update([
                     'status' => 'COMPLETED',
                     'new_photo_path' => $newPhotoPath,
                     'output_size' => strlen($encodedData),
@@ -176,9 +193,10 @@ class UserPhotoImportService
                     'old_photo' => $item->old_photo_path,
                     'new_photo' => $newPhotoPath,
                 ]);
-            });
+                $item->setRawAttributes($lockedItem->getAttributes(), true);
 
-            return true;
+                return true;
+            });
         } catch (\Exception $e) {
             Log::error('Failed to process photo import item', [
                 'item_id' => $item->id,
@@ -186,11 +204,14 @@ class UserPhotoImportService
                 'error' => $e->getMessage(),
             ]);
 
-            $item->update([
-                'status' => 'PROCESSING_FAILED',
-                'error_code' => 'PROCESSING_FAILED',
-                'error_message' => $e->getMessage(),
-            ]);
+            UserPhotoImportItem::query()
+                ->whereKey($item->getKey())
+                ->where('status', '!=', 'COMPLETED')
+                ->update([
+                    'status' => 'PROCESSING_FAILED',
+                    'error_code' => 'PROCESSING_FAILED',
+                    'error_message' => $e->getMessage(),
+                ]);
 
             return false;
         }
