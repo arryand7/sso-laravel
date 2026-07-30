@@ -81,6 +81,47 @@ Sabira Connect adalah pusat identitas utama dan Single Sign-On (SSO) untuk ekosi
 - `login_logs`: Audit log login user.
 - `settings`: Konfigurasi terenkripsi (OAuth Google, SMTP).
 
+### Provisioning identity contract (schema 1.0, additive)
+
+Field identity berikut ditambahkan secara opsional tanpa menghapus field schema 1.0 sebelumnya. Hanya user aktif dengan `user_application_accesses.status=active` untuk aplikasi pemanggil yang dikirim. `email_verified` berasal langsung dari keberadaan `users.email_verified_at`; client tidak boleh menyimpulkannya dari email. `legacy_oidc_subject` adalah representasi string dari primary key `users.id`, sumber yang sama dengan claim `sub` pada implementasi OIDC Gate saat ini. Nilai tersebut read-only dan tidak menggantikan UUID utama. NIS belum memiliki unique constraint di schema; duplicate NIS adalah conflict review, bukan alasan untuk memakai nama sebagai identity match.
+
+Contoh response (data sintetis):
+
+```json
+{
+  "schema_version": "1.0",
+  "total_users": 1,
+  "users": [{
+    "uuid": "86d79fe3-9d74-4b4c-9859-c9ca0553d19e",
+    "gate_user_uuid": "86d79fe3-9d74-4b4c-9859-c9ca0553d19e",
+    "username": "student-example",
+    "name": "Example Student",
+    "email": "student@example.test",
+    "email_verified": true,
+    "type": "student",
+    "user_type": "student",
+    "nis": "EXAMPLE-001",
+    "nip": null,
+    "legacy_oidc_subject": "123",
+    "status": "active",
+    "application_access": {
+      "status": "active",
+      "role": "santri",
+      "granted_at": "2026-07-30T10:00:00+07:00",
+      "last_synced_at": null
+    }
+  }]
+}
+```
+
+Administrator dapat menjalankan preview read-only tanpa membuat assignment:
+
+```bash
+php artisan gate:preview-application-population smart
+```
+
+Preview menghitung assignment aktif, tipe user, ketersediaan UUID/NIS/verified email/legacy subject, user inactive, identity incomplete, dan duplicate identity groups.
+
 ---
 
 ## Setup dan Running

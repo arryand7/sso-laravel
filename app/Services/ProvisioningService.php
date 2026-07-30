@@ -85,6 +85,10 @@ class ProvisioningService
     public function getChangedUsers(Application $app, ?string $since = null): array
     {
         $query = UserApplicationAccess::where('application_id', $app->id)
+            ->where('status', 'active')
+            ->whereHas('user', function ($q) {
+                $q->where('status', 'active');
+            })
             ->with('user');
 
         if ($since) {
@@ -193,16 +197,23 @@ class ProvisioningService
     {
         $data = [
             'uuid' => $user->uuid,
+            'gate_user_uuid' => $user->uuid,
             'username' => $user->username,
             'name' => $user->name,
             'email' => $user->email,
+            'email_verified' => $user->email_verified_at !== null,
             'type' => $user->type,
+            'user_type' => $user->type,
             'nis' => $user->nis,
             'nip' => $user->nip,
+            // The OIDC implementation uses the immutable users.id value as `sub`.
+            'legacy_oidc_subject' => (string) $user->id,
             'status' => $user->status,
             'application_access' => [
                 'status' => $access->status,
                 'role' => $app->supportsRole() ? $access->application_role : null,
+                'granted_at' => $access->granted_at?->toIso8601String(),
+                'last_synced_at' => $access->last_synced_at?->toIso8601String(),
             ],
             'updated_at' => $user->updated_at->toIso8601String(),
         ];

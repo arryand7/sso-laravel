@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\User;
+use App\Models\UserApplicationAccess;
 use App\Services\ApplicationAccessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -45,6 +46,7 @@ class ProvisioningApiTest extends TestCase
             'name' => 'Ahmad Santri',
             'username' => 'ahmad01',
             'email' => 'ahmad@sabira.id',
+            'email_verified_at' => now(),
             'password' => 'secret123',
             'type' => 'student',
             'nis' => '22001001',
@@ -98,6 +100,66 @@ class ProvisioningApiTest extends TestCase
         $response->assertJsonFragment(['uuid' => $this->user1->uuid]);
         $response->assertJsonFragment(['username' => 'ahmad01']);
         $response->assertJsonMissing(['username' => 'budi02']);
+
+        $user = $response->json('users.0');
+        $this->assertSame($this->user1->uuid, $user['uuid']);
+        $this->assertSame($this->user1->uuid, $user['gate_user_uuid']);
+        $this->assertSame('student', $user['type']);
+        $this->assertSame('student', $user['user_type']);
+        $this->assertSame('22001001', $user['nis']);
+        $this->assertTrue($user['email_verified']);
+        $this->assertSame((string) $this->user1->id, $user['legacy_oidc_subject']);
+        $this->assertSame('active', $user['application_access']['status']);
+    }
+
+    public function test_unverified_email_is_explicitly_false(): void
+    {
+        $this->user1->update(['email_verified_at' => null]);
+
+        $response = $this->withProvisioningCredentials()
+            ->getJson(route('api.provisioning.users.index'));
+
+        $response->assertOk()->assertJsonPath('users.0.email_verified', false);
+    }
+
+    public function test_payload_remains_additive_and_contains_no_sensitive_fields(): void
+    {
+        $user = $this->withProvisioningCredentials()
+            ->getJson(route('api.provisioning.users.index'))
+            ->assertOk()
+            ->json('users.0');
+
+        foreach (['uuid', 'username', 'name', 'email', 'type', 'nis', 'nip', 'status', 'application_access', 'updated_at', 'photo'] as $legacyField) {
+            $this->assertArrayHasKey($legacyField, $user);
+        }
+
+        foreach (['password', 'password_hash', 'remember_token', 'token', 'client_secret', 'recovery_codes'] as $sensitiveField) {
+            $this->assertArrayNotHasKey($sensitiveField, $user);
+        }
+    }
+
+    public function test_empty_assignment_returns_empty_population(): void
+    {
+        UserApplicationAccess::query()->delete();
+
+        $this->withProvisioningCredentials()
+            ->getJson(route('api.provisioning.users.index'))
+            ->assertOk()
+            ->assertJsonPath('total_users', 0)
+            ->assertJsonPath('users', []);
+    }
+
+    public function test_changes_endpoint_only_returns_active_assignments_and_users(): void
+    {
+        $service = app(ApplicationAccessService::class);
+        $service->grantAccess($this->user2, $this->targetApp, 'santri', 'inactive');
+
+        $response = $this->withProvisioningCredentials()
+            ->getJson(route('api.provisioning.changes'));
+
+        $response->assertOk()
+            ->assertJsonPath('total_changes', 1)
+            ->assertJsonMissing(['username' => 'budi02']);
     }
 
     public function test_provisioning_api_does_not_return_revoked_or_inactive_users(): void
@@ -160,6 +222,14 @@ class ProvisioningApiTest extends TestCase
             'application_id' => $this->targetApp->id,
             'status' => 'matched',
             'external_user_id' => '99',
+        ]);
+    }
+
+    private function withProvisioningCredentials(): static
+    {
+        return $this->withHeaders([
+            'X-Client-Id' => $this->targetApp->client_id,
+            'X-Client-Secret' => $this->targetApp->client_secret,
         ]);
     }
 }
