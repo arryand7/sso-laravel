@@ -371,12 +371,13 @@
 </div>
 
 {{-- Modal Bulk Grant Access --}}
-<div id="modal-bulk-grant" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+<div id="modal-bulk-grant" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto {{ $errors->has('user_ids') ? '' : 'hidden' }}">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-6 relative">
         <h3 class="text-lg font-bold text-gray-900 mb-2">Beri Akses ke Banyak User Sekaligus</h3>
         <p class="text-xs text-gray-500 mb-4">Pilih user-user yang ingin diberikan hak akses ke aplikasi {{ $application->name }}.</p>
-        <form action="{{ route('admin.applications.users.bulk-grant', $application) }}" method="POST" class="space-y-4">
+        <form id="bulk-grant-form" action="{{ route('admin.applications.users.bulk-grant', $application) }}" method="POST" class="space-y-4">
             @csrf
+            <input id="bulk-user-ids-json" type="hidden" name="user_ids_json" value="{{ old('user_ids_json', '[]') }}">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Application Role (Opsional)</label>
                 <input type="text" name="application_role" placeholder="Misal: santri, guru, student"
@@ -384,20 +385,51 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Daftar User (Pilih Banyak)</label>
-                <div class="max-h-56 overflow-y-auto border rounded-lg p-2 space-y-1 bg-slate-50">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                    <div class="sm:col-span-2 relative">
+                        <span class="material-symbols-outlined absolute left-2.5 top-2 text-[18px] text-gray-400">search</span>
+                        <input id="bulk-user-search" type="search" placeholder="Cari nama atau username..."
+                            class="w-full border-gray-300 rounded-lg pl-9 text-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <select id="bulk-user-type" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Semua tipe</option>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="parent">Parent</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-2 py-2 bg-blue-50 border border-blue-100 rounded-lg mb-2 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer font-semibold text-blue-800">
+                        <input id="bulk-user-select-all" type="checkbox" class="rounded border-blue-300 text-blue-600 focus:ring-blue-500">
+                        <span>Centang semua hasil filter</span>
+                    </label>
+                    <button id="bulk-user-clear" type="button" class="font-medium text-slate-600 hover:text-slate-900">Kosongkan pilihan</button>
+                </div>
+                <div id="bulk-user-list" class="max-h-64 overflow-y-auto border rounded-lg p-2 space-y-1 bg-slate-50">
                     @foreach($allUsers as $u)
-                        <label class="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer text-xs">
-                            <input type="checkbox" name="user_ids[]" value="{{ $u->id }}" class="rounded text-blue-600">
+                        <label class="bulk-user-item flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer text-xs"
+                            data-search="{{ $u->name }} {{ $u->username }}" data-type="{{ $u->type }}">
+                            <input type="checkbox" value="{{ $u->id }}" class="bulk-user-checkbox rounded text-blue-600 focus:ring-blue-500">
                             <span class="font-medium text-gray-800">{{ $u->name }}</span>
                             <span class="text-gray-400 font-mono text-[11px]">({{ $u->username }} - {{ $u->type }})</span>
                         </label>
                     @endforeach
+                    <p id="bulk-user-empty" class="hidden px-3 py-6 text-center text-sm text-gray-400">Tidak ada user yang cocok dengan filter.</p>
                 </div>
+                <p id="bulk-user-summary" class="mt-2 text-xs text-gray-500" aria-live="polite"></p>
+                @error('user_ids')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('modal-bulk-grant').classList.add('hidden')"
                     class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg">Batal</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg">Berikan Akses Massal</button>
+                <button id="bulk-grant-submit" type="submit" disabled
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg">
+                    Berikan Akses Massal
+                </button>
             </div>
         </form>
     </div>
@@ -456,6 +488,90 @@
                     setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
                 }
             });
+        }
+
+        const bulkForm = document.getElementById('bulk-grant-form');
+        if (bulkForm) {
+            const searchInput = document.getElementById('bulk-user-search');
+            const typeSelect = document.getElementById('bulk-user-type');
+            const selectAll = document.getElementById('bulk-user-select-all');
+            const clearButton = document.getElementById('bulk-user-clear');
+            const hiddenIds = document.getElementById('bulk-user-ids-json');
+            const summary = document.getElementById('bulk-user-summary');
+            const emptyState = document.getElementById('bulk-user-empty');
+            const submitButton = document.getElementById('bulk-grant-submit');
+            const items = Array.from(bulkForm.querySelectorAll('.bulk-user-item'));
+            let initialSelectedIds = [];
+
+            try {
+                initialSelectedIds = JSON.parse(hiddenIds.value || '[]').map(String);
+            } catch (error) {
+                initialSelectedIds = [];
+            }
+
+            const initialSelected = new Set(initialSelectedIds);
+            items.forEach((item) => {
+                const checkbox = item.querySelector('.bulk-user-checkbox');
+                checkbox.checked = initialSelected.has(checkbox.value);
+            });
+
+            const visibleItems = () => items.filter((item) => !item.classList.contains('hidden'));
+
+            const updateSelection = () => {
+                const selected = items
+                    .map((item) => item.querySelector('.bulk-user-checkbox'))
+                    .filter((checkbox) => checkbox.checked);
+                const visibleCheckboxes = visibleItems().map((item) => item.querySelector('.bulk-user-checkbox'));
+                const visibleSelected = visibleCheckboxes.filter((checkbox) => checkbox.checked).length;
+
+                hiddenIds.value = JSON.stringify(selected.map((checkbox) => Number(checkbox.value)));
+                selectAll.checked = visibleCheckboxes.length > 0 && visibleSelected === visibleCheckboxes.length;
+                selectAll.indeterminate = visibleSelected > 0 && visibleSelected < visibleCheckboxes.length;
+                selectAll.disabled = visibleCheckboxes.length === 0;
+                submitButton.disabled = selected.length === 0;
+                submitButton.textContent = selected.length > 0
+                    ? `Berikan Akses ke ${selected.length} User`
+                    : 'Berikan Akses Massal';
+                summary.textContent = `${selected.length} user dipilih · ${visibleCheckboxes.length} dari ${items.length} user ditampilkan`;
+                emptyState.classList.toggle('hidden', visibleCheckboxes.length > 0);
+            };
+
+            const applyFilter = () => {
+                const search = searchInput.value.trim().toLocaleLowerCase('id');
+                const type = typeSelect.value;
+
+                items.forEach((item) => {
+                    const matchesSearch = !search || item.dataset.search.toLocaleLowerCase('id').includes(search);
+                    const matchesType = !type || item.dataset.type === type;
+                    item.classList.toggle('hidden', !(matchesSearch && matchesType));
+                });
+
+                updateSelection();
+            };
+
+            searchInput.addEventListener('input', applyFilter);
+            typeSelect.addEventListener('change', applyFilter);
+            items.forEach((item) => item.querySelector('.bulk-user-checkbox').addEventListener('change', updateSelection));
+            selectAll.addEventListener('change', () => {
+                visibleItems().forEach((item) => {
+                    item.querySelector('.bulk-user-checkbox').checked = selectAll.checked;
+                });
+                updateSelection();
+            });
+            clearButton.addEventListener('click', () => {
+                items.forEach((item) => {
+                    item.querySelector('.bulk-user-checkbox').checked = false;
+                });
+                updateSelection();
+            });
+            bulkForm.addEventListener('submit', (event) => {
+                updateSelection();
+                if (JSON.parse(hiddenIds.value).length === 0) {
+                    event.preventDefault();
+                }
+            });
+
+            applyFilter();
         }
     });
 

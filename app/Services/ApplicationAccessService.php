@@ -61,15 +61,51 @@ class ApplicationAccessService
         ?string $role = null,
         ?int $grantedBy = null
     ): int {
-        $count = 0;
-        $users = User::whereIn('id', $userIds)->get();
+        $existingUserIds = User::whereIntegerInRaw('id', array_unique($userIds))
+            ->pluck('id')
+            ->all();
 
-        foreach ($users as $user) {
-            $this->grantAccess($user, $app, $role, 'active', $grantedBy);
-            $count++;
+        if ($existingUserIds === []) {
+            return 0;
         }
 
-        return $count;
+        $now = now();
+        $applicationRole = $role ? trim($role) : null;
+
+        DB::transaction(function () use ($existingUserIds, $app, $applicationRole, $grantedBy, $now) {
+            foreach (array_chunk($existingUserIds, 500) as $chunk) {
+                $accessRows = array_map(static fn ($userId) => [
+                    'user_id' => $userId,
+                    'application_id' => $app->id,
+                    'application_role' => $applicationRole,
+                    'status' => 'active',
+                    'granted_at' => $now,
+                    'granted_by' => $grantedBy,
+                    'revoked_at' => null,
+                    'revoked_by' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], $chunk);
+
+                UserApplicationAccess::upsert(
+                    $accessRows,
+                    ['user_id', 'application_id'],
+                    ['application_role', 'status', 'granted_at', 'granted_by', 'revoked_at', 'revoked_by', 'updated_at']
+                );
+
+                $syncRows = array_map(static fn ($userId) => [
+                    'user_id' => $userId,
+                    'application_id' => $app->id,
+                    'status' => 'never_synced',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], $chunk);
+
+                ApplicationUserSyncStatus::insertOrIgnore($syncRows);
+            }
+        });
+
+        return count($existingUserIds);
     }
 
     /**

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class ApplicationController extends Controller
@@ -102,7 +103,9 @@ class ApplicationController extends Controller
 
         $filters = $request->only(['search', 'type', 'application_role', 'status', 'sync_status']);
         $userAccesses = $accessService->getApplicationUsers($application, $filters, 15);
-        $allUsers = User::active()->orderBy('name')->get();
+        $allUsers = User::active()
+            ->orderBy('name')
+            ->get(['id', 'name', 'username', 'type']);
 
         return view('admin.applications.show', [
             'application' => $application,
@@ -157,13 +160,45 @@ class ApplicationController extends Controller
     public function bulkGrantUserAccess(Request $request, Application $application, ApplicationAccessService $accessService)
     {
         $validated = $request->validate([
-            'user_ids' => 'required|array',
+            'user_ids' => 'nullable|array',
             'user_ids.*' => 'exists:users,id',
+            'user_ids_json' => 'nullable|string',
             'application_role' => 'nullable|string|max:255',
         ]);
 
+        $userIds = $validated['user_ids'] ?? [];
+
+        if (! empty($validated['user_ids_json'])) {
+            $decodedUserIds = json_decode($validated['user_ids_json'], true);
+
+            if (! is_array($decodedUserIds)) {
+                throw ValidationException::withMessages([
+                    'user_ids' => 'Daftar user yang dipilih tidak valid.',
+                ]);
+            }
+
+            $userIds = array_values(array_unique(array_map(
+                static fn ($userId) => filter_var($userId, FILTER_VALIDATE_INT),
+                $decodedUserIds
+            )));
+            $userIds = array_values(array_filter($userIds, static fn ($userId) => $userId !== false && $userId > 0));
+        }
+
+        if ($userIds === []) {
+            throw ValidationException::withMessages([
+                'user_ids' => 'Pilih minimal satu user.',
+            ]);
+        }
+
+        $existingUserIds = User::whereIntegerInRaw('id', $userIds)->pluck('id')->all();
+        if (count($existingUserIds) !== count($userIds)) {
+            throw ValidationException::withMessages([
+                'user_ids' => 'Salah satu user yang dipilih sudah tidak tersedia.',
+            ]);
+        }
+
         $count = $accessService->bulkGrantAccess(
-            $validated['user_ids'],
+            $existingUserIds,
             $application,
             $validated['application_role'] ?? null,
             auth()->id()

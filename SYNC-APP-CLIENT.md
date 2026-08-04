@@ -2,6 +2,8 @@
 
 Dokumen ini berisi ketentuan teknis, arsitektur, dan alur pengembangan yang **wajib** diterapkan pada setiap aplikasi client (seperti **Smart, Laptop, SSS, Moodle, Progress, Absensi**) agar dapat terhubung dan menggunakan fitur **Pull-Based User Synchronization & Application Access Management** dari **Gate SSO**.
 
+> **Wajib sebelum implementasi:** baca [Kontrak dan Pemetaan User Gate](docs/gate-user-mapping.md). Dokumen tersebut menetapkan enum canonical, perbedaan `type`/`application_role`/role lokal, mapping untuk schema legacy, dan pencegahan error MySQL `Data truncated for column`.
+
 ---
 
 ## 1. Konsep Utama & Prinsip Identitas
@@ -61,6 +63,8 @@ Schema::table('users', function (Blueprint $table) {
     }
 });
 ```
+
+`type`, `application_role`, dan role/permission lokal adalah tiga domain berbeda. Client **dilarang** mengisi kolom enum `role` langsung dari `type`. Bila schema client menggunakan enum lama, terapkan mapping dan allowlist sesuai [dokumen pemetaan](docs/gate-user-mapping.md) sebelum melakukan insert/update.
 
 ---
 

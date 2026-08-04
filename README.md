@@ -153,7 +153,8 @@ vendor/bin/pint && ./vendor/bin/phpunit -d memory_limit=512M
 
 ## Dokumentasi Tambahan
 
-- **Ketentuan Integrasi Aplikasi Client**: [`SYNC-APP-CLIENT.md`](file:///Users/ryand/Documents/LARAVEL/sabira/gate-sso/SYNC-APP-CLIENT.md) — Panduan lengkap ketentuan & langkah pengembangan bagi pengembang aplikasi client (Smart, Laptop, SSS, Moodle) agar dapat menggunakan fitur sinkronisasi ini.
+- **Kontrak dan Pemetaan User Gate**: [`docs/gate-user-mapping.md`](docs/gate-user-mapping.md) — Referensi field, enum canonical, mapping schema legacy, validasi preflight, dan penanganan error enum database client.
+- **Ketentuan Integrasi Aplikasi Client**: [`SYNC-APP-CLIENT.md`](SYNC-APP-CLIENT.md) — Panduan lengkap ketentuan & langkah pengembangan bagi pengembang aplikasi client (Smart, Laptop, SSS, Moodle) agar dapat menggunakan fitur sinkronisasi ini.
 - **Panduan Teknis API Provisioning**: [connector_integration_guide.md](file:///Users/ryand/.gemini/antigravity-ide/brain/ceb48790-fc07-4194-96a4-c1738b04dbc2/connector_integration_guide.md)
 - **Dokumentasi Walkthrough**: [walkthrough.md](file:///Users/ryand/.gemini/antigravity-ide/brain/ceb48790-fc07-4194-96a4-c1738b04dbc2/walkthrough.md)
 

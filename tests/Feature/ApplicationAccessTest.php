@@ -160,4 +160,68 @@ class ApplicationAccessTest extends TestCase
         $response->assertSee('student01');
         $response->assertSee('santri');
     }
+
+    public function test_bulk_access_modal_has_filter_and_select_all_controls(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.applications.show', $this->app1));
+
+        $response->assertOk();
+        $response->assertSee('bulk-user-search', false);
+        $response->assertSee('bulk-user-type', false);
+        $response->assertSee('bulk-user-select-all', false);
+        $response->assertSee('Centang semua hasil filter');
+        $response->assertSee('user_ids_json', false);
+    }
+
+    public function test_bulk_access_accepts_json_user_selection(): void
+    {
+        $secondStudent = User::create([
+            'name' => 'Siswa Kedua',
+            'username' => 'student02',
+            'email' => 'student02@sabira.id',
+            'password' => 'secret123',
+            'type' => 'student',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(
+            route('admin.applications.users.bulk-grant', $this->app1),
+            [
+                'user_ids_json' => json_encode([$this->student->id, $secondStudent->id]),
+                'application_role' => 'santri',
+            ]
+        );
+
+        $response->assertRedirect(route('admin.applications.show', $this->app1));
+        $response->assertSessionHas('status', 'Akses berhasil diberikan kepada 2 user.');
+        $this->assertDatabaseHas('user_application_accesses', [
+            'user_id' => $this->student->id,
+            'application_id' => $this->app1->id,
+            'application_role' => 'santri',
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('user_application_accesses', [
+            'user_id' => $secondStudent->id,
+            'application_id' => $this->app1->id,
+            'application_role' => 'santri',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_bulk_access_service_handles_more_than_one_thousand_users(): void
+    {
+        $users = User::factory()->count(1205)->create();
+
+        $count = app(ApplicationAccessService::class)->bulkGrantAccess(
+            $users->pluck('id')->all(),
+            $this->app1,
+            'staff',
+            $this->admin->id
+        );
+
+        $this->assertSame(1205, $count);
+        $this->assertDatabaseCount('user_application_accesses', 1205);
+        $this->assertDatabaseCount('application_user_sync_statuses', 1205);
+    }
 }
